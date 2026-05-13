@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/home/home_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/onboarding_state.dart';
 
@@ -22,7 +23,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (_, __) => const _Placeholder('Home'),
+        builder: (_, __) => const HomeScreen(),
       ),
       GoRoute(
         path: '/module/:moduleId',

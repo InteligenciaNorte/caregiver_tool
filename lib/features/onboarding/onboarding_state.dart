@@ -17,7 +17,6 @@ class OnboardedNotifier extends StateNotifier<bool> {
   }
 }
 
-final onboardedProvider =
-    StateNotifierProvider<OnboardedNotifier, bool>((ref) {
+final onboardedProvider = StateNotifierProvider<OnboardedNotifier, bool>((ref) {
   return OnboardedNotifier(ref.watch(prefsProvider));
 });

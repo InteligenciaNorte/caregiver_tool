@@ -18,7 +18,8 @@ ThemeData _buildTheme(Brightness brightness) {
   return base.copyWith(
     textTheme: base.textTheme.copyWith(
       bodyLarge: base.textTheme.bodyLarge?.copyWith(fontSize: 20, height: 1.5),
-      bodyMedium: base.textTheme.bodyMedium?.copyWith(fontSize: 18, height: 1.5),
+      bodyMedium:
+          base.textTheme.bodyMedium?.copyWith(fontSize: 18, height: 1.5),
       bodySmall: base.textTheme.bodySmall?.copyWith(fontSize: 16, height: 1.5),
     ),
   );

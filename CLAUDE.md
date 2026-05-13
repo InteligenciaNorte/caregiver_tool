@@ -78,8 +78,8 @@ I own the Flutter app; they own the model, training data, and crisis classifier 
 
 ## External docs in this repo
 
-- `docs/ARCHITECTURE.md` — public technical overview (on-device deployment, function calling, safety classifier, data model, privacy posture)
-- `docs/module_system.md` — module configuration contract (ModuleConfig + ModuleManifest, JSON schema, error handling)
+- `docs/architecture.md` — public technical overview (on-device deployment, function calling, safety classifier, data model, privacy posture)
+- `docs/module-system.md` — module configuration contract (ModuleConfig + ModuleManifest, JSON schema, error handling)
 
 ## Test Devices
 

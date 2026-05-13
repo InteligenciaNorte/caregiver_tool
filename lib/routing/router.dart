@@ -2,13 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/onboarding/onboarding_screen.dart';
+import '../features/onboarding/onboarding_state.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/onboarding',
+    redirect: (context, state) {
+      final onboarded = ref.read(onboardedProvider);
+      if (onboarded && state.matchedLocation == '/onboarding') {
+        return '/home';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/onboarding',
-        builder: (_, __) => const _Placeholder('Onboarding'),
+        builder: (_, __) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/home',

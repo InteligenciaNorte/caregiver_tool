@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_gemma: ^0.13.1
+  llamadart: ^0.6.12
   flutter_riverpod: ^2.5.1
   go_router: ^14.6.0
   sqflite: ^2.3.3

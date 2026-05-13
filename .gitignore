@@ -45,7 +45,6 @@ app.*.map.json
 /android/app/release
 
 # Project-specific
-assets/model/*.litertlm
-assets/model/*.task
+assets/model/*.gguf
 .env
 train/

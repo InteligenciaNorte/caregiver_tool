@@ -78,20 +78,8 @@ I own the Flutter app; they own the model, training data, and crisis classifier 
 
 ## External docs in this repo
 
-- `vibe-coder-brief.md` — full daily plan, Claude Code prompts (§6). **Note: §4 (tech stack) and §9 (handoff dependencies) still reference `flutter_gemma` and `.litertlm` from v1. The authoritative source is this CLAUDE.md.** Brief gets updated later.
-- `module-system-doc-v2.md` — ModuleConfig/ModuleManifest contract with ML. Still accurate.
-- `PHASE_1_DECISIONS.md` (if present) — log of pivots since v1 brief.
-
-## Project Decisions Log (since v1 brief)
-
-These decisions supersede anything older in `vibe-coder-brief.md`:
-
-1. **LLM runtime: `flutter_gemma` → `llamadart`.** Reason: Unsloth fine-tuning exports to GGUF, not `.litertlm`. `.litertlm` export pipeline for fine-tuned models is not supported. Also unlocks iOS as a side benefit.
-2. **Model format: `.litertlm` → GGUF.** Pairs with the runtime change. ML engineer exports merged LoRA model as a single GGUF artifact.
-3. **Quantization: locked to Q4_K_M.** ~3 GB on disk. Q8_0 was the original suggestion but doesn't fit on 8 GB mobile devices (especially iPhone where Apple's per-app memory cap is ~3-4 GB on 8 GB hardware). LoRA quality compensates for the slightly lower base precision.
-4. **Context window: `contextSize: 2048`.** Tight but sufficient for the longest module (Dichotomy sort: ~1940 tokens worst case). System-prompt-first truncation policy applies when overflow is approached: drop the oldest turn pair, never the system prompt.
-5. **Platforms: Android + iOS** (was Android-only). iOS deployment target 16.4+. Demo recording: Samsung S23 (8 GB Android) as primary device; iPhone 16 Pro Max (8 GB iOS) as cross-platform validation.
-6. **No analytics, no codegen, no network** — unchanged from v1.
+- `docs/ARCHITECTURE.md` — public technical overview (on-device deployment, function calling, safety classifier, data model, privacy posture)
+- `docs/module_system.md` — module configuration contract (ModuleConfig + ModuleManifest, JSON schema, error handling)
 
 ## Test Devices
 

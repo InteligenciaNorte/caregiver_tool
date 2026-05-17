@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 const _seed = Color(0xFF4A6B6F);
 
+/// Neutral dark, de-tinted from the teal seed. Shared by the Home writing
+/// panel and the disabled (inert) button so the two surfaces match exactly.
+/// Tuned for the app's dark theme (its only mode).
+const kSurfacePanel = Color(0xFF1E2124);
+
 ThemeData get lightTheme => _buildTheme(Brightness.light);
 ThemeData get darkTheme => _buildTheme(Brightness.dark);
 
@@ -47,33 +52,28 @@ ThemeData _buildTheme(Brightness brightness) {
         ),
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        // Inert state stays a clearly-present, legible (muted) button —
-        // not the near-invisible dark-on-dark M3 default.
-        disabledBackgroundColor: scheme.surfaceContainerHighest,
-        disabledForegroundColor: scheme.onSurfaceVariant,
+        // Inert state: same neutral surface as the writing panel (de-tinted,
+        // no green), with a clearly-present muted-neutral label — not the
+        // near-invisible dark-on-dark M3 default.
+        disabledBackgroundColor: kSurfacePanel,
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.55),
       ),
     ),
+    // The writing panel's surface (fill, border, shadow, padding) is drawn by
+    // a decorated container in home_screen.dart, so the field itself is
+    // chrome-free: transparent, no border, no internal padding.
     inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: scheme.surfaceContainerHighest,
+      filled: false,
+      isCollapsed: true,
+      contentPadding: EdgeInsets.zero,
       hintStyle: base.textTheme.bodyLarge?.copyWith(
         fontSize: 20,
         height: 1.5,
-        color: scheme.onSurfaceVariant,
+        color: scheme.onSurface.withValues(alpha: 0.72),
       ),
-      contentPadding: const EdgeInsets.all(20),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: scheme.outlineVariant),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: scheme.outlineVariant),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: scheme.primary, width: 2),
-      ),
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
     ),
     // Tap target only — no textStyle override, so the quiet "I need help
     // right now" header link and crisis "Return" stay understated.

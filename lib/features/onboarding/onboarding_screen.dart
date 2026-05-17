@@ -1,196 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../ui/widgets/crisis_header.dart';
 import 'onboarding_state.dart';
 
-class OnboardingScreen extends ConsumerStatefulWidget {
+// Lead-owned copy. Draft examples lifted verbatim from architecture.md; they
+// are explicitly iterable later — do not reword without asking.
+const _heading = 'Other caregivers come here with things like this';
+
+const _examples = [
+  'We had to call the ambulance for dad today. When they rolled his stretcher out the door I felt this massive weight lift off my chest. I handed my sick father over to strangers and just felt so relieved he was out of my house. What is wrong with me.',
+  "Yelled at mom again. She just wanted her sweater. I'm a monster.",
+  "Mom had a really bad night and for about an hour I genuinely wished she would die in her sleep. I don't recognize myself.",
+  'She hit me today. I froze and then cried in the bathroom for twenty minutes.',
+  "Couldn't make myself go in to change him this morning. Just stood at the door.",
+];
+
+const _privacyLine =
+    'Nothing leaves your phone. Nothing is saved between sessions.';
+
+class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
 
   @override
-  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
-}
-
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  final _controller = PageController();
-  int _page = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _finish() async {
-    await ref.read(onboardedProvider.notifier).markComplete();
-    if (mounted) context.go('/home');
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _controller,
-                onPageChanged: (i) => setState(() => _page = i),
+      body: Column(
+        children: [
+          const CrisisHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _PrivacyCard(),
-                  const _PurposeCard(),
-                  _CrisisCard(onContinue: _finish),
+                  Text(_heading, style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 24),
+                  for (final example in _examples)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          example,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _privacyLine,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 32),
+                  // TODO(deferred): gate Begin on model-load splash
+                  FilledButton(
+                    onPressed: () async {
+                      await ref
+                          .read(onboardedProvider.notifier)
+                          .markComplete();
+                      if (context.mounted) context.go('/home');
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                    ),
+                    child: const Text('Begin'),
+                  ),
                 ],
               ),
-            ),
-            _PageDots(count: 3, current: _page),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PrivacyCard extends StatelessWidget {
-  const _PrivacyCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _CardShell(
-      child: Text(
-        'Everything you type stays on this phone. There is no account, no email, no upload. You can wipe it any time.',
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-}
-
-class _PurposeCard extends StatelessWidget {
-  const _PurposeCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _CardShell(
-      child: Text(
-        "This is not therapy and not a chatbot. It's a structured tool for short decompression moments. 3 to 15 minutes.",
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-}
-
-class _CrisisCard extends StatelessWidget {
-  const _CrisisCard({required this.onContinue});
-
-  final Future<void> Function() onContinue;
-
-  Future<void> _call(String number) async {
-    await launchUrl(
-      Uri(scheme: 'tel', path: number),
-      mode: LaunchMode.externalApplication,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _CardShell(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            "If you're in crisis, here are people who can help right now.",
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 32),
-          Semantics(
-            button: true,
-            label: "Call Alzheimer's Association, 1-800-272-3900",
-            child: FilledButton(
-              onPressed: () => _call('18002723900'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-              ),
-              child: const Text("Call Alzheimer's Association: 1-800-272-3900"),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Semantics(
-            button: true,
-            label: 'Call 988, U S Suicide and Crisis Lifeline',
-            child: FilledButton(
-              onPressed: () => _call('988'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-              ),
-              child: const Text('Call 988 (US Suicide & Crisis Lifeline)'),
-            ),
-          ),
-          const SizedBox(height: 32),
-          TextButton(
-            onPressed: onContinue,
-            child: Text(
-              'Continue to app',
-              style: theme.textTheme.bodySmall,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CardShell extends StatelessWidget {
-  const _CardShell({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return MergeSemantics(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: DefaultTextStyle.merge(
-            style: Theme.of(context).textTheme.bodyLarge,
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PageDots extends StatelessWidget {
-  const _PageDots({required this.count, required this.current});
-
-  final int count;
-  final int current;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (i) {
-        final active = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: active ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: active
-                ? scheme.primary
-                : scheme.onSurface.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
-          ),
-        );
-      }),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/data/prefs_provider.dart';
 
-const onboardedPrefsKey = 'caregiver_tool_v1.onboarded';
+const onboardedPrefsKey = 'onboarding_seen';
 
 class OnboardedNotifier extends StateNotifier<bool> {
   OnboardedNotifier(this._prefs)

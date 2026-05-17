@@ -1,15 +1,19 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/crisis/crisis_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/onboarding_state.dart';
+import '../features/session/session_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/onboarding',
     redirect: (context, state) {
+      // ref.read (not watch) — watching would recreate the GoRouter on the
+      // onboarding flag flip and drop navigation state. markComplete() +
+      // context.go already triggers a fresh redirect pass.
       final onboarded = ref.read(onboardedProvider);
       if (onboarded && state.matchedLocation == '/onboarding') {
         return '/home';
@@ -26,32 +30,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const HomeScreen(),
       ),
       GoRoute(
-        path: '/module/:moduleId',
-        builder: (_, state) =>
-            _Placeholder('Module: ${state.pathParameters['moduleId']}'),
+        path: '/session',
+        builder: (_, __) => const SessionScreen(),
       ),
       GoRoute(
-        path: '/session/:sessionId/close',
-        builder: (_, state) =>
-            _Placeholder('Close session ${state.pathParameters['sessionId']}'),
-      ),
-      GoRoute(
-        path: '/settings',
-        builder: (_, __) => const _Placeholder('Settings'),
+        path: '/crisis',
+        builder: (_, __) => const CrisisScreen(),
       ),
     ],
   );
 });
-
-class _Placeholder extends StatelessWidget {
-  final String label;
-  const _Placeholder(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(label)),
-      body: Center(child: Text(label)),
-    );
-  }
-}

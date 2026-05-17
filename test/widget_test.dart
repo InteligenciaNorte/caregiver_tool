@@ -5,7 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('App boots into onboarding privacy card', (tester) async {
+  testWidgets('App boots into onboarding with the privacy line',
+      (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -17,6 +18,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('stays on this phone'), findsOneWidget);
+    expect(
+      find.textContaining('Nothing leaves your phone'),
+      findsOneWidget,
+    );
   });
 }

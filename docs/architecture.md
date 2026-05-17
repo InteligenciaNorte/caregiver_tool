@@ -24,27 +24,16 @@ Three goals:
 - Show what kinds of things people typically share, so the input field doesn't feel intimidating
 - Make the privacy posture explicit so they trust they can write what they actually feel
 
-The screen has a short heading along the lines of *"Other caregivers come here with things like this"*, followed by 4–6 cards with realistic example disclosures. The cards should match the disclosure style the model was trained on — concrete, first-person, shame-adjacent. Draft examples:
+Layout is a **paged flow of four pages**, each with a clear forward button — `Next` on pages 1–3, `Begin` on a dedicated final page. The user can swipe or tap to advance. There is no skip button, no close button, no "I'll do this later." The pages:
 
-> "We had to call the ambulance for dad today. When they rolled his stretcher out the door I felt this massive weight lift off my chest. I handed my sick father over to strangers and just felt so relieved he was out of my house. What is wrong with me."
+1. **What it is** — names who this is for and how it works, so the app explains itself rather than leaving the user to infer it. Heading along the lines of *"For the moments no one prepared you for"*, with a short body that says it's for caregivers of someone with dementia, that they write what they're carrying and are met with understanding (not advice), in about five minutes.
+2. **Examples** — a short heading (*"Other caregivers come here with things like this"*) followed by several very short example fragments rendered together as chips/pills. They match the disclosure style the model was trained on — concrete, first-person, shame-adjacent — but trimmed to a phrase so they read at a glance rather than as a wall of text. Draft fragments: *"snapped at mom again"*, *"relieved when he was hospitalized"*, *"wished it would end"*, *"froze when she hit me"*, *"couldn't go in this morning"*. Showing all fragments together on this one page preserves the cumulative *"many people come here with hard things"* effect — the reason the examples are not spread one-per-page.
+3. **Privacy** — makes the offline/on-device posture explicit and credible: a heading (*"What you write stays with you"*), a short body explaining it runs entirely on the phone with no internet, no account, no cloud, and the existing one-line assurance verbatim: *"Nothing leaves your phone. Nothing is saved between sessions."*
+4. **Ready** — a brief closing line (*"Ready when you are"*) whose only action is the `Begin` button.
 
-> "Yelled at mom again. She just wanted her sweater. I'm a monster."
+Exact copy is lead-owned and was approved for this design (2026-05-17); wording can still be iterated with the lead. The goal of the examples page remains *"yes, that's the kind of thing this is for."*
 
-> "Mom had a really bad night and for about an hour I genuinely wished she would die in her sleep. I don't recognize myself."
-
-> "She hit me today. I froze and then cried in the bathroom for twenty minutes."
-
-> "Couldn't make myself go in to change him this morning. Just stood at the door."
-
-Exact card copy can be iterated during build; the goal is *"yes, that's the kind of thing this is for."*
-
-Below the cards: a one-line privacy assurance — *"Nothing leaves your phone. Nothing is saved between sessions."* — and a Begin button.
-
-Layout is a single vertically scrollable screen, not a paged carousel. The cumulative effect of seeing several disclosures together on one screen is the point — *"many people come here with hard things."* A carousel that reveals one card at a time loses that effect and reads as a tutorial.
-
-The Begin button is rendered at the bottom of the scrollable column, below the privacy line. There is no skip button, no close button, no "I'll do this later." If the user wants to reach Home, they scroll past the cards to get to Begin — the button is physically below them. This is a soft requirement, not a forced tap-through wall: the user can scroll fast if they want, the button is always present, no reveal logic is needed.
-
-The persistent "I need help right now" link in the header is visible on this screen from the first moment, before any scrolling. Someone in acute distress on first launch must never have to read example cards first.
+The persistent "I need help right now" link in the header is visible on **every** onboarding page from the first moment, before any interaction. Someone in acute distress on first launch must never have to read examples first.
 
 Onboarding shows once. A single boolean flag in SharedPreferences (`onboarding_seen`) gates it. This is the only thing the app persists between launches.
 

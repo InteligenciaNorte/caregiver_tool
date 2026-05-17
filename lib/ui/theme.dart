@@ -26,6 +26,12 @@ ThemeData _buildTheme(Brightness brightness) {
 
   return base.copyWith(
     textTheme: base.textTheme.copyWith(
+      headlineSmall: base.textTheme.headlineSmall?.copyWith(
+        fontSize: 26,
+        height: 1.25,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
+      ),
       bodyLarge: base.textTheme.bodyLarge?.copyWith(fontSize: 20, height: 1.5),
       bodyMedium:
           base.textTheme.bodyMedium?.copyWith(fontSize: 18, height: 1.5),
@@ -41,8 +47,10 @@ ThemeData _buildTheme(Brightness brightness) {
         ),
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        disabledBackgroundColor: scheme.onSurface.withValues(alpha: 0.12),
-        disabledForegroundColor: scheme.onSurface.withValues(alpha: 0.38),
+        // Inert state stays a clearly-present, legible (muted) button —
+        // not the near-invisible dark-on-dark M3 default.
+        disabledBackgroundColor: scheme.surfaceContainerHighest,
+        disabledForegroundColor: scheme.onSurfaceVariant,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

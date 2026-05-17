@@ -54,7 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const CrisisHeader(),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
                 child: TextField(
                   controller: _controller,
                   onChanged: notifier.setSituation,

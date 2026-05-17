@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../ui/widgets/crisis_header.dart';
 import 'onboarding_state.dart';
 
-// Lead-owned copy. Approved 2026-05-17 for the paged onboarding redesign.
+// Lead-owned copy. Approved 2026-05-17 (paged onboarding redesign);
+// examples list + heading revised 2026-05-17 per project lead.
 // Do not reword without asking the project lead.
 const _whatHeading = 'For the moments no one prepared you for';
 const _whatBody =
@@ -13,13 +14,19 @@ const _whatBody =
     'out loud. Write one down here and be met with understanding — not '
     'advice, not fixing. About five minutes.';
 
-const _examplesHeading = 'Other caregivers come here with things like this';
+const _examplesHeading = "You're not the only one who's thought these";
 const _examples = [
-  'snapped at mom again',
-  'relieved when he was hospitalized',
-  'wished it would end',
-  'froze when she hit me',
-  "couldn't go in this morning",
+  'secretly glad the ambulance came',
+  'dreading the day they discharge him',
+  'prayed for an excuse to stay in bed',
+  'felt absolutely nothing when she cried',
+  'he looked at me like a complete stranger',
+  'called me a thief again today',
+  "so jealous of my sibling's normal life",
+  'realized no one is coming to help',
+  'terrified of my own anger today',
+  'just waiting for it to be over',
+  'i just want my life back',
 ];
 
 const _privacyHeading = 'What you write stays with you';
@@ -59,6 +66,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  void _back() {
+    _controller.previousPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   Future<void> _begin() async {
     await ref.read(onboardedProvider.notifier).markComplete();
     if (mounted) context.go('/home');
@@ -69,42 +83,68 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const CrisisHeader(),
+          Stack(
+            children: [
+              const CrisisHeader(),
+              if (_page > 0)
+                Positioned.directional(
+                  textDirection: Directionality.of(context),
+                  start: 4,
+                  top: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      child: IconButton(
+                        onPressed: _back,
+                        icon: const Icon(Icons.arrow_back),
+                        tooltip: 'Back',
+                        iconSize: 24,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           Expanded(
             child: PageView(
               controller: _controller,
               onPageChanged: (i) => setState(() => _page = i),
-              children: const [
-                _WhatPage(),
-                _ExamplesPage(),
-                _PrivacyPage(),
-                _ReadyPage(),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                _Dots(count: _pageCount, active: _page),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _isLast ? _begin : _next,
-                    child: Text(_isLast ? 'Begin' : 'Next'),
-                  ),
-                ),
+                const _WhatPage(),
+                const _ExamplesPage(),
+                const _PrivacyPage(),
+                _ReadyPage(onBegin: _begin),
               ],
             ),
           ),
+          if (!_isLast)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Dots(count: _pageCount, active: _page),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _next,
+                      child: const Text('Next'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
+/// Vertically centres a page's content in the available space, but lets it
+/// scroll if it would overflow (large text scale / short screens).
 class _PageScroll extends StatelessWidget {
   const _PageScroll({required this.child});
 
@@ -112,9 +152,16 @@ class _PageScroll extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: child,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+            child: Center(child: child),
+          ),
+        );
+      },
     );
   }
 }
@@ -127,11 +174,11 @@ class _WhatPage extends StatelessWidget {
     final theme = Theme.of(context);
     return _PageScroll(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
           Text(_whatHeading, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Text(_whatBody, style: theme.textTheme.bodyLarge),
         ],
       ),
@@ -147,9 +194,9 @@ class _ExamplesPage extends StatelessWidget {
     final theme = Theme.of(context);
     return _PageScroll(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
           Text(_examplesHeading, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 24),
           Wrap(
@@ -197,18 +244,39 @@ class _PrivacyPage extends StatelessWidget {
     final theme = Theme.of(context);
     return _PageScroll(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
           Text(_privacyHeading, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Text(_privacyBody, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 24),
-          Center(
-            child: Text(
-              _privacyLine,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
+          const SizedBox(height: 28),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 22,
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _privacyLine,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -218,20 +286,30 @@ class _PrivacyPage extends StatelessWidget {
 }
 
 class _ReadyPage extends StatelessWidget {
-  const _ReadyPage();
+  const _ReadyPage({required this.onBegin});
+
+  final VoidCallback onBegin;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return _PageScroll(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 48),
           Text(
             _readyHeading,
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onBegin,
+              child: const Text('Begin'),
+            ),
           ),
         ],
       ),

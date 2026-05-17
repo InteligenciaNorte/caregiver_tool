@@ -38,11 +38,8 @@ class CrisisScreen extends StatelessWidget {
                 label: "Call Alzheimer's Association, 1-800-272-3900",
                 child: FilledButton(
                   onPressed: () => _call('18002723900'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                  ),
-                  child:
-                      const Text("Call Alzheimer's Association: 1-800-272-3900"),
+                  child: const Text(
+                      "Call Alzheimer's Association: 1-800-272-3900"),
                 ),
               ),
               const SizedBox(height: 16),
@@ -51,9 +48,6 @@ class CrisisScreen extends StatelessWidget {
                 label: 'Call 988, U S Suicide and Crisis Lifeline',
                 child: FilledButton(
                   onPressed: () => _call('988'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                  ),
                   child: const Text('Call 988 (US Suicide & Crisis Lifeline)'),
                 ),
               ),

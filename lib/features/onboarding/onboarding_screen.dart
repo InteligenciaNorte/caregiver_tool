@@ -89,13 +89,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               children: [
                 _Dots(count: _pageCount, active: _page),
                 const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _isLast ? _begin : _next,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    minimumSize: const Size.fromHeight(0),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _isLast ? _begin : _next,
+                    child: Text(_isLast ? 'Begin' : 'Next'),
                   ),
-                  child: Text(_isLast ? 'Begin' : 'Next'),
                 ),
               ],
             ),

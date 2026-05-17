@@ -32,12 +32,12 @@ class SessionScreen extends StatelessWidget {
                     style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 40),
-                  FilledButton(
-                    onPressed: () => context.go('/home'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => context.go('/home'),
+                      child: const Text('Done'),
                     ),
-                    child: const Text('Done'),
                   ),
                 ],
               ),

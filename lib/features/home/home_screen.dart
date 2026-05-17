@@ -43,44 +43,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasText =
-        ref.watch(homeProvider).situationText.trim().isNotEmpty;
+    final hasText = ref.watch(homeProvider).situationText.trim().isNotEmpty;
     final notifier = ref.read(homeProvider.notifier);
 
     return Scaffold(
-      body: Column(
-        children: [
-          const CrisisHeader(),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: TextField(
-                controller: _controller,
-                onChanged: notifier.setSituation,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                keyboardType: TextInputType.multiline,
-                style: theme.textTheme.bodyLarge,
-                decoration: const InputDecoration(
-                  hintText:
-                      "Write what you're sitting with. As long or as short as you need.",
-                  border: InputBorder.none,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const CrisisHeader(),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: TextField(
+                  controller: _controller,
+                  onChanged: notifier.setSituation,
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  keyboardType: TextInputType.multiline,
+                  style: theme.textTheme.bodyLarge,
+                  decoration: const InputDecoration(
+                    hintText:
+                        "Write what you're sitting with. As long or as short as you need.",
+                    alignLabelWithHint: true,
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: FilledButton(
-              onPressed: hasText ? _onContinue : null,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: hasText ? _onContinue : null,
+                  child: const Text('Continue'),
+                ),
               ),
-              child: const Text('Continue'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

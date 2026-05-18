@@ -1,9 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../ui/widgets/crisis_header.dart';
 import 'onboarding_state.dart';
+
+// Lead-owned copy. Approved 2026-05-17 (paged onboarding redesign);
+// examples list + heading revised 2026-05-17 per project lead.
+// Do not reword without asking the project lead.
+const _whatHeading = 'For the moments no one prepared you for';
+const _whatBody =
+    'Caring for someone with dementia brings thoughts that are hard to say '
+    'out loud. Write one down here and be met with understanding — not '
+    'advice, not fixing. About five minutes.';
+
+const _examplesHeading = "You're not the only one who's thought these";
+const _examples = [
+  'secretly glad the ambulance came',
+  'dreading the day they discharge him',
+  'prayed for an excuse to stay in bed',
+  'felt absolutely nothing when she cried',
+  'he looked at me like a complete stranger',
+  'called me a thief again today',
+  "so jealous of my sibling's normal life",
+  'realized no one is coming to help',
+  'terrified of my own anger today',
+  'just waiting for it to be over',
+  'i just want my life back',
+];
+
+const _privacyHeading = 'What you write stays with you';
+const _privacyBody =
+    'It runs entirely on your phone, with no internet. Nothing is sent '
+    'anywhere, no account, no cloud.';
+const _privacyLine =
+    'Nothing leaves your phone. Nothing is saved between sessions.';
+
+const _readyHeading = 'Ready when you are';
+
+const _pageCount = 4;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -22,7 +57,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  Future<void> _finish() async {
+  bool get _isLast => _page == _pageCount - 1;
+
+  void _next() {
+    _controller.nextPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _back() {
+    _controller.previousPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<void> _begin() async {
     await ref.read(onboardedProvider.notifier).markComplete();
     if (mounted) context.go('/home');
   }
@@ -30,112 +81,202 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _controller,
-                onPageChanged: (i) => setState(() => _page = i),
+      body: Column(
+        children: [
+          Stack(
+            children: [
+              const CrisisHeader(),
+              if (_page > 0)
+                Positioned.directional(
+                  textDirection: Directionality.of(context),
+                  start: 4,
+                  top: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      child: IconButton(
+                        onPressed: _back,
+                        icon: const Icon(Icons.arrow_back),
+                        tooltip: 'Back',
+                        iconSize: 24,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          Expanded(
+            child: PageView(
+              controller: _controller,
+              onPageChanged: (i) => setState(() => _page = i),
+              children: [
+                const _WhatPage(),
+                const _ExamplesPage(),
+                const _PrivacyPage(),
+                _ReadyPage(onBegin: _begin),
+              ],
+            ),
+          ),
+          if (!_isLast)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _PrivacyCard(),
-                  const _PurposeCard(),
-                  _CrisisCard(onContinue: _finish),
+                  _Dots(count: _pageCount, active: _page),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _next,
+                      child: const Text('Next'),
+                    ),
+                  ),
                 ],
               ),
             ),
-            _PageDots(count: 3, current: _page),
-            const SizedBox(height: 24),
-          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Vertically centres a page's content in the available space, but lets it
+/// scroll if it would overflow (large text scale / short screens).
+class _PageScroll extends StatelessWidget {
+  const _PageScroll({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+            child: Center(child: child),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WhatPage extends StatelessWidget {
+  const _WhatPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _PageScroll(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_whatHeading, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 20),
+          Text(_whatBody, style: theme.textTheme.bodyLarge),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExamplesPage extends StatelessWidget {
+  const _ExamplesPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _PageScroll(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_examplesHeading, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 8,
+            runSpacing: 12,
+            children: [
+              for (final example in _examples) _ExampleBubble(example),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExampleBubble extends StatelessWidget {
+  const _ExampleBubble(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSecondaryContainer,
         ),
       ),
     );
   }
 }
 
-class _PrivacyCard extends StatelessWidget {
-  const _PrivacyCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _CardShell(
-      child: Text(
-        'Everything you type stays on this phone. There is no account, no email, no upload. You can wipe it any time.',
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-}
-
-class _PurposeCard extends StatelessWidget {
-  const _PurposeCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _CardShell(
-      child: Text(
-        "This is not therapy and not a chatbot. It's a structured tool for short decompression moments. 3 to 15 minutes.",
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-}
-
-class _CrisisCard extends StatelessWidget {
-  const _CrisisCard({required this.onContinue});
-
-  final Future<void> Function() onContinue;
-
-  Future<void> _call(String number) async {
-    await launchUrl(
-      Uri(scheme: 'tel', path: number),
-      mode: LaunchMode.externalApplication,
-    );
-  }
+class _PrivacyPage extends StatelessWidget {
+  const _PrivacyPage();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return _CardShell(
+    return _PageScroll(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "If you're in crisis, here are people who can help right now.",
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 32),
-          Semantics(
-            button: true,
-            label: "Call Alzheimer's Association, 1-800-272-3900",
-            child: FilledButton(
-              onPressed: () => _call('18002723900'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-              ),
-              child: const Text("Call Alzheimer's Association: 1-800-272-3900"),
+          Text(_privacyHeading, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 20),
+          Text(_privacyBody, style: theme.textTheme.bodyLarge),
+          const SizedBox(height: 28),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          const SizedBox(height: 16),
-          Semantics(
-            button: true,
-            label: 'Call 988, U S Suicide and Crisis Lifeline',
-            child: FilledButton(
-              onPressed: () => _call('988'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-              ),
-              child: const Text('Call 988 (US Suicide & Crisis Lifeline)'),
-            ),
-          ),
-          const SizedBox(height: 32),
-          TextButton(
-            onPressed: onContinue,
-            child: Text(
-              'Continue to app',
-              style: theme.textTheme.bodySmall,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 22,
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _privacyLine,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -144,53 +285,63 @@ class _CrisisCard extends StatelessWidget {
   }
 }
 
-class _CardShell extends StatelessWidget {
-  const _CardShell({required this.child});
+class _ReadyPage extends StatelessWidget {
+  const _ReadyPage({required this.onBegin});
 
-  final Widget child;
+  final VoidCallback onBegin;
 
   @override
   Widget build(BuildContext context) {
-    return MergeSemantics(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: DefaultTextStyle.merge(
-            style: Theme.of(context).textTheme.bodyLarge,
-            child: child,
+    final theme = Theme.of(context);
+    return _PageScroll(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _readyHeading,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall,
           ),
-        ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onBegin,
+              child: const Text('Begin'),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _PageDots extends StatelessWidget {
-  const _PageDots({required this.count, required this.current});
+class _Dots extends StatelessWidget {
+  const _Dots({required this.count, required this.active});
 
   final int count;
-  final int current;
+  final int active;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (i) {
-        final active = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: active ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: active
-                ? scheme.primary
-                : scheme.onSurface.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
+      children: [
+        for (var i = 0; i < count; i++)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            height: 8,
+            width: i == active ? 24 : 8,
+            decoration: BoxDecoration(
+              color: i == active ? scheme.primary : scheme.onSurfaceVariant,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
-        );
-      }),
+      ],
     );
   }
 }

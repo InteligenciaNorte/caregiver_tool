@@ -3,63 +3,142 @@
 ## Project Context
 
 Flutter app (Android + iOS) for family caregivers of people with dementia.
-Runs Gemma 4 E2B on-device (no network) via llama.cpp through the llamadart Flutter plugin.
-Hackathon submission, deadline May 18, 2026.
+Runs a fine-tuned Gemma 4 E2B on-device (no network) via llama.cpp through
+the llamadart Flutter plugin. Hackathon submission, deadline May 18, 2026.
 
-I (the developer) am working with an ML engineer in parallel.
-I own the Flutter app; they own the model, training data, and crisis classifier rules.
+I (the developer) am working with an ML engineer in parallel. I own the
+Flutter app; they own the model artifact, the fine-tuning data, the system
+prompt, and the crisis classifier rules.
+
+Single source of truth for what the app does: `docs/architecture.md`.
+Read it first; this file complements it with project conventions.
+
+## Scope
+
+One module only: **Witnessing Hard Moments with Compassion** (4 steps,
+~5 minutes). No module polymorphism, no module registry, no JSON manifests,
+no module-selection UI. The module is the app.
+
+No persistence between sessions. Nothing in SQLite. Nothing in
+SharedPreferences except a single `onboarding_seen` boolean. Session state
+lives in memory and is gone on app close.
 
 ## Hard Rules (NEVER violate)
 
 1. **NO code generation packages.** Do NOT add `build_runner`, `freezed`,
    `freezed_annotation`, `drift`, `drift_dev`, `riverpod_generator`,
-   `json_serializable`, or `auto_route`. If a solution requires one of these,
+   `json_serializable`, or `auto_route`. If a solution seems to require one,
    stop and find a no-codegen alternative.
-2. **NO network calls except `tel:` URIs.** The app is offline-first.
-   Do not add `dio`, `http`, `firebase_*`, `sentry_*`, `crashlytics`,
-   `posthog`, `mixpanel`, or any telemetry/analytics package.
-3. **NO login, account, email field, or share buttons.**
-4. **Crisis classifier rules are owned by the ML engineer.** Do not edit
-   logic in `lib/core/crisis/classifier.dart`. You wire it; you don't tune it.
-5. **Calibrated copy is owned by the project lead.** Do not change wording
-   on Onboarding cards, the Crisis Overlay, or the "I need to stop" buttons
-   without asking. Layout/spacing/colors are fair game; words are not.
+2. **NO network calls except `tel:` URIs** (crisis-resource dialer). Offline-
+   first. Do not add `dio`, `http`, `firebase_*`, `sentry_*`, `crashlytics`,
+   `posthog`, `mixpanel`, or any telemetry / analytics package.
+3. **NO persistence of user data.** No sqflite. No SharedPreferences for
+   typed input or session content. The only allowed SharedPreferences key is
+   `onboarding_seen` (boolean).
+4. **NO login, account, email field, or share buttons.**
+5. **Crisis classifier is now AUTHORED (safety-critical).**
+   `lib/core/crisis/classifier.dart` is implemented against the locked
+   Dart API below. Do NOT edit the classifier logic, regex tables, layer
+   thresholds, suppression rules, or `docs/classifier_research.md`
+   without **explicit project-lead domain-review approval recorded in the
+   PR** (copy/safety owner sign-off). This is a safety-critical file;
+   "obvious" tweaks are exactly the failure mode. The Dart API is locked:
+   ```dart
+   enum RiskLevel { none, low, medium, high, acute }
+   RiskLevel classify(String situation);
+   ```
+   You wire the router and UI against this signature; you don't tune the
+   rules. Routing policy (`routeFor`) and the MEDIUM helpline-card UI are
+   developer-owned and may change without classifier review.
+6. **Calibrated copy is owned by the project lead.** Do not change wording
+   on onboarding cards, the crisis screen, the Home hint, or session-step UI
+   text without asking. Layout, spacing, colors are fair game; words are not.
+
+## Known gaps (MUST close before any live deployment)
+
+- **MEDIUM helpline card — CLOSED 2026-05-18.** The classifier emits
+  MEDIUM (L3 passive ideation, bare self-burdensomeness, obfuscation);
+  MEDIUM now runs the session **with a persistent helpline card pinned
+  on every step** (`lib/ui/widgets/helpline_card.dart`), as
+  `docs/architecture.md` §Safety requires. Wiring: `GoSession` carries
+  the classified `RiskLevel`; `sessionProvider` holds it; `SessionScreen`
+  pins the card when `risk == medium`. NONE/LOW are unchanged (no card).
+  Classifier untouched (Hard Rule #5; verified byte-identical). Smoke
+  test `MEDIUM situation -> session with pinned helpline card` guards it.
+  Two follow-ups before live deploy: (1) the card's `_framingLine` is
+  **new copy pending project-lead review** (the 988/Alzheimer's labels
+  reuse approved crisis-screen copy verbatim); (2) the card is pinned in
+  the session *shell* — re-confirm placement once the real step state
+  machine lands so it stays visible on every step.
 
 ## Tech Stack (locked)
 
 - Flutter 3.24+, Dart 3.5+
-- **Platforms: Android (primary) + iOS (cross-platform validation).** iOS deployment target 16.4+.
-- State: `flutter_riverpod` with `StateNotifierProvider` (NOT `@riverpod` codegen)
+- Platforms: Android (primary), iOS (cross-platform validation). iOS
+  deployment target 16.4+.
+- State: `flutter_riverpod` with `StateNotifierProvider` (NOT `@riverpod`)
 - Sealed states: native Dart 3 `sealed class` (NOT Freezed)
-- Routing: `go_router` with string paths (NOT typed routes / codegen)
-- DB: raw `sqflite` with manual repositories (NOT Drift)
-- JSON: `dart:convert` with manual `fromJson`/`toJson` (NOT json_serializable)
-- Settings: `shared_preferences`
-- **LLM runtime: `llamadart` (Flutter plugin wrapping llama.cpp). Loads GGUF models.**
-- **Model artifact: single `gemma-4-E2B-it-Q4_K_M.gguf` (~3 GB), produced by ML engineer via Unsloth → GGUF export.**
-- **Inference config: `contextSize: 2048`, single quantization (Q4_K_M).** Both values lock-in for the hackathon; can be changed later if eval warrants.
+- Routing: `go_router` with string paths
+- JSON: `dart:convert` with manual `fromJson` (NOT json_serializable). Only
+  the system prompt asset is loaded at startup; no JSON elsewhere.
+- Settings: `shared_preferences` (one boolean only, see Hard Rule #3)
+- LLM runtime: `llamadart` plugin wrapping llama.cpp
+- Model artifact: single `assets/model/gemma-4-E2B-it-Q4_K_M.gguf` (~3 GB),
+  produced by ML engineer via Unsloth → GGUF export
+- Inference config: `contextSize: 2048`, `gpuLayers: -1`, Q4_K_M
+- Conversation format: ChatML (system once, then user/assistant alternation)
 
 ## Build Commands
 
 - Install deps: `flutter pub get`
 - Run on connected device: `flutter run`
 - Build debug APK: `flutter build apk --debug`
-- Build release APK (Day 6+): `flutter build apk --release`
+- Build release APK: `flutter build apk --release`
 - Build iOS for testing: `flutter build ios --debug --no-codesign`
 - Static analysis: `flutter analyze` (must pass with zero errors)
 - Format: `dart format lib/`
 
 ## Directory Ownership
 
-- `lib/core/llm/` — me (Flutter dev). Owns `GemmaClient` interface, `MockGemmaClient`, `RealGemmaClient` (llamadart-backed).
-- `lib/core/crisis/classifier.dart` — ML engineer; do not edit
-- `lib/core/crisis/crisis_router.dart` — me (Flutter dev)
-- `lib/core/data/` — me
-- `lib/core/modules/` — me, but `assets/prompts/*.json` arrives from ML engineer
-- `lib/features/` — me
-- `lib/ui/` — me
-- `assets/model/*.gguf` — ML engineer drops files; do not generate or modify
-- `assets/prompts/*.json` — ML engineer files; do not edit content, only load
+- `lib/core/llm/` — me. `GemmaClient` interface, `MockGemmaClient` for
+  tests/dev, `RealGemmaClient` (llamadart-backed).
+- `lib/core/crisis/classifier.dart` — ML engineer; do not edit.
+- `lib/core/crisis/crisis_router.dart` — me.
+- `lib/features/onboarding/` — me.
+- `lib/features/home/` — me.
+- `lib/features/session/` — me. The core of the app: step state machine,
+  background generation, ChatML conversation assembly.
+- `lib/features/crisis/` — me. A single crisis screen with two entry points
+  (manual link from any screen + auto-route from HIGH/ACUTE classifier).
+- `lib/ui/` — me. Shared widgets, theme.
+- `assets/model/*.gguf` — ML engineer drops files; do not generate or modify.
+- `assets/prompts/witnessing_hard_moments.txt` — ML engineer file; do not
+  edit content, only load. A placeholder is fine for development.
+
+## ML-engineer values (one still unresolved)
+
+These come from the ML engineer. A placeholder is acceptable until it lands;
+it replaces cleanly with no other code changes.
+
+1. **Continue-marker string** — UNRESOLVED. The user-turn content between
+   assistant steps in ChatML. Use a `kContinueMarker` constant. Placeholder:
+   `"<continue>"`. (Note: `inference_config.json` specifies a *stop* token
+   `"<turn|>"`, which is a different thing — not the continue marker.)
+2. **System prompt content** — RESOLVED 2026-05-18. The production system
+   prompt has landed: `assets/prompts/witnessing_hard_moments.txt` (~3.3 KB)
+   is byte-identical to the ML engineer's delivered `system_prompt.txt`. It
+   is no longer a placeholder; load it verbatim, do not edit it.
+
+## Session failure behavior
+
+If a step generation fails or times out mid-session:
+
+- **First failure on a step:** retry once silently, no UI change.
+- **Second failure:** replace the step's reflection with a calm inline
+  message and two buttons — "Try again" and "Close for now". No fallback
+  static reflection — never fake a model response.
+- **OOM kill** (iOS especially, silent): unrecoverable mid-session. Next
+  launch is a fresh start. We don't persist session state anyway.
 
 ## Workflow Conventions
 
@@ -72,17 +151,23 @@ I own the Flutter app; they own the model, training data, and crisis classifier 
 ## What to do when stuck
 
 - Compile errors: paste the FULL error including stack trace before guessing.
-- Architectural question: re-read the directory ownership section above.
-- Safety / model / classifier question: tell me to ask the ML engineer.
-- Codegen suggestion appears: reject it, find no-codegen alternative.
+- Architectural question: re-read `docs/architecture.md` first; if still
+  unclear, ask.
+- Safety / model / classifier question: ask, do not improvise.
+- Codegen suggestion appears: reject it, find a no-codegen alternative.
 
 ## External docs in this repo
 
-- `docs/architecture.md` — public technical overview (on-device deployment, function calling, safety classifier, data model, privacy posture)
-- `docs/module-system.md` — module configuration contract (ModuleConfig + ModuleManifest, JSON schema, error handling)
+- `docs/architecture.md` — single source of truth for app behavior. Read first.
+
+(Previously this repo had `docs/module-system.md` and `docs/module-dataset-spec.md`.
+Both are deleted; their content was specific to a multi-module design that
+no longer exists.)
 
 ## Test Devices
 
 - **Samsung S23** (Android, 8 GB RAM) — primary test target, demo recording device
 - **iPhone 16 Pro Max** (iOS, 8 GB RAM) — cross-platform validation
-- Both devices have hard memory constraints. Watch for OOM kills, especially on iOS where they're silent.
+
+Both devices have hard memory constraints. Watch for OOM kills, especially
+on iOS where they are silent.

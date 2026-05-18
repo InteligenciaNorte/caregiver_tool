@@ -1,26 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/crisis/crisis_router.dart';
+import '../../ui/theme.dart';
+import '../../ui/widgets/crisis_header.dart';
+import '../session/session_state.dart';
 import 'home_state.dart';
-
-const _placeholders = [
-  'Snapped at her. Now guilty.',
-  "Can't sleep. Listening.",
-  'Got the bill.',
-];
-
-const _durations = [3, 5, 10, 15];
-
-String _greetingGlyph(DateTime now) {
-  final h = now.hour;
-  if (h >= 22 || h < 5) return '🌙';
-  if (h < 11) return '🌅';
-  if (h < 17) return '☀️';
-  return '🌆';
-}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -31,102 +17,105 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   late final TextEditingController _controller;
-  Timer? _placeholderTimer;
-  int _placeholderIndex = 0;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
-    _placeholderTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      setState(() {
-        _placeholderIndex = (_placeholderIndex + 1) % _placeholders.length;
-      });
-    });
+    _controller = TextEditingController(
+      text: ref.read(homeProvider).situationText,
+    );
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
   }
+
+  // Drop the hint the moment the field is focused (cursor in), not only on
+  // the first keystroke; it returns if the user leaves without writing.
+  void _onFocusChange() => setState(() {});
 
   @override
   void dispose() {
-    _placeholderTimer?.cancel();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
 
+  void _onContinue() {
+    final situation = ref.read(homeProvider).situationText;
+    switch (ref.read(crisisRouterProvider)(situation)) {
+      case GoSession(:final level):
+        // NONE/LOW/MEDIUM all run the session; the level decides whether
+        // the MEDIUM helpline card is pinned (read in SessionScreen).
+        ref.read(sessionProvider.notifier).start(level);
+        context.go('/session');
+      case GoCrisis():
+        context.go('/crisis');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(homeProvider);
-    final notifier = ref.read(homeProvider.notifier);
     final theme = Theme.of(context);
-
-    // TODO(copy): confirm glyph set + hour boundaries with project lead
-    final greeting = '${_greetingGlyph(DateTime.now())}  Glad you came';
+    final hasText = ref.watch(homeProvider).situationText.trim().isNotEmpty;
+    final notifier = ref.read(homeProvider.notifier);
 
     return Scaffold(
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
+            const CrisisHeader(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 32),
-                    Text(greeting, style: theme.textTheme.headlineSmall),
-                    const SizedBox(height: 40),
-                    Text(
-                      'How long do you have?',
-                      style: theme.textTheme.bodyLarge,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    // Shared neutral surface (see kSurfacePanel): a faint
+                    // light edge + soft drop shadow lift it off the darker
+                    // background as a calm raised card.
+                    color: kSurfacePanel,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      children: [
-                        for (final m in _durations)
-                          ChoiceChip(
-                            label: Text(m == 15 ? '15+ min' : '$m min'),
-                            selected: state.selectedDurationMin == m,
-                            onSelected: (_) => notifier.setDuration(m),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      "What's the moment?",
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _controller,
-                      onChanged: notifier.setSituation,
-                      maxLines: 1,
-                      decoration: InputDecoration(
-                        hintText: _placeholders[_placeholderIndex],
-                        border: const OutlineInputBorder(),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        blurRadius: 28,
+                        spreadRadius: -4,
+                        offset: const Offset(0, 12),
                       ),
-                    ),
-                    const SizedBox(height: 40),
-                    FilledButton(
-                      onPressed: state.selectedDurationMin == null
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    onChanged: notifier.setSituation,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    keyboardType: TextInputType.multiline,
+                    style: theme.textTheme.bodyLarge,
+                    decoration: InputDecoration(
+                      hintText: _focusNode.hasFocus
                           ? null
-                          : () => context.go('/module/self_compassion'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                      ),
-                      child: const Text('Begin'),
+                          : "Write what you're sitting with. As long or as short as you need.",
+                      alignLabelWithHint: true,
                     ),
-                    const SizedBox(height: 24),
-                    // TODO(day2): list last 3 sessions from sqflite
-                  ],
+                  ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: TextButton(
-                // TODO(day3): open CrisisOverlay
-                onPressed: () {},
-                child: const Text('I need help right now'),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: hasText ? _onContinue : null,
+                  child: const Text('Continue'),
+                ),
               ),
             ),
           ],

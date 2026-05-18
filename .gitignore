@@ -45,6 +45,18 @@ app.*.map.json
 /android/app/release
 
 # Project-specific
-assets/model/*.gguf
+# Model blobs are never committed (multi-GB, ML-engineer-owned, shipped
+# via the asset/build pipeline) — broad pattern so a GGUF at any path,
+# including the misplaced one at repo root, can't be accidentally added.
+*.gguf
 .env
 train/
+
+# TEMPORARY: ML-engineer artifact drops sitting at repo root (wrong
+# location/name vs assets/model/gemma-4-E2B-it-Q4_K_M.gguf). The GGUF is
+# permanently covered by *.gguf above; these two have no final home yet
+# (inference_config.json has no consumer; system_prompt.txt is redundant
+# with the tracked assets/prompts/witnessing_hard_moments.txt) — revisit
+# before any release. See memory: project-root-artifacts-gitignored-temp.
+inference_config.json
+system_prompt.txt

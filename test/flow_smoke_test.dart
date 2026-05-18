@@ -1,5 +1,6 @@
 import 'package:caregiver_tool/app.dart';
 import 'package:caregiver_tool/core/data/prefs_provider.dart';
+import 'package:caregiver_tool/ui/widgets/helpline_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,11 +72,13 @@ void main() {
     );
     expect(continueBtn2.onPressed, isNotNull);
 
-    // Stub classifier returns none -> GoSession.
+    // 'I snapped at mom today.' classifies NONE -> GoSession; a plain
+    // session with NO helpline card.
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
     await tester.pumpAndSettle();
     expect(find.textContaining('session flow is not built yet'),
         findsOneWidget);
+    expect(find.byType(HelplineCard), findsNothing);
 
     // Session Done -> Home.
     await tester.tap(find.widgetWithText(FilledButton, 'Done'));
@@ -105,6 +108,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.textContaining("Write what you're sitting with"),
+      findsOneWidget,
+    );
+  });
+
+  // Closes the known MEDIUM gap: a passive-ideation disclosure must run
+  // the session (not the crisis overlay) but with the helpline card
+  // pinned. 'I wish I was dead' is a fixed L3 MEDIUM case in
+  // classifier_test.dart.
+  testWidgets('MEDIUM situation -> session with pinned helpline card',
+      (tester) async {
+    await _pumpApp(tester);
+    await _advanceOnboarding(tester);
+
+    await tester.enterText(find.byType(TextField), 'I wish I was dead');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+
+    // Session runs (not the crisis overlay)...
+    expect(find.textContaining('session flow is not built yet'),
+        findsOneWidget);
+    expect(find.textContaining("people who can help right now"), findsNothing);
+    // ...with the helpline card pinned.
+    expect(find.byType(HelplineCard), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, 'Call 988 (US Suicide & Crisis Lifeline)'),
       findsOneWidget,
     );
   });

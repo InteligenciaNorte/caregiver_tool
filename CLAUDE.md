@@ -56,15 +56,20 @@ lives in memory and is gone on app close.
 
 ## Known gaps (MUST close before any live deployment)
 
-- **MEDIUM has no UI yet.** The classifier is live and now emits MEDIUM
-  (L3 passive ideation, bare self-burdensomeness, obfuscation). Per
-  `docs/architecture.md` §Safety, MEDIUM should run the session **with a
-  persistent helpline card pinned on every step**. That card is **not
-  built**. Until it is, MEDIUM is behaviorally indistinguishable from LOW
-  (session runs, no helpline surfaced) — i.e. MEDIUM silently degrades to
-  LOW. This is a known, accepted gap for development only. It **must be
-  closed before any live/demo deployment**; do not ship with MEDIUM
-  un-surfaced. Tracked as a developer-owned UI follow-up.
+- **MEDIUM helpline card — CLOSED 2026-05-18.** The classifier emits
+  MEDIUM (L3 passive ideation, bare self-burdensomeness, obfuscation);
+  MEDIUM now runs the session **with a persistent helpline card pinned
+  on every step** (`lib/ui/widgets/helpline_card.dart`), as
+  `docs/architecture.md` §Safety requires. Wiring: `GoSession` carries
+  the classified `RiskLevel`; `sessionProvider` holds it; `SessionScreen`
+  pins the card when `risk == medium`. NONE/LOW are unchanged (no card).
+  Classifier untouched (Hard Rule #5; verified byte-identical). Smoke
+  test `MEDIUM situation -> session with pinned helpline card` guards it.
+  Two follow-ups before live deploy: (1) the card's `_framingLine` is
+  **new copy pending project-lead review** (the 988/Alzheimer's labels
+  reuse approved crisis-screen copy verbatim); (2) the card is pinned in
+  the session *shell* — re-confirm placement once the real step state
+  machine lands so it stays visible on every step.
 
 ## Tech Stack (locked)
 

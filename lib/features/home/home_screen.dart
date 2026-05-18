@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/crisis/crisis_router.dart';
 import '../../ui/theme.dart';
 import '../../ui/widgets/crisis_header.dart';
+import '../session/session_state.dart';
 import 'home_state.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -43,7 +44,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _onContinue() {
     final situation = ref.read(homeProvider).situationText;
     switch (ref.read(crisisRouterProvider)(situation)) {
-      case GoSession():
+      case GoSession(:final level):
+        // NONE/LOW/MEDIUM all run the session; the level decides whether
+        // the MEDIUM helpline card is pinned (read in SessionScreen).
+        ref.read(sessionProvider.notifier).start(level);
         context.go('/session');
       case GoCrisis():
         context.go('/crisis');

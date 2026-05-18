@@ -63,14 +63,39 @@ class SessionScreen extends ConsumerWidget {
   }
 }
 
-/// Step 0's wait, or the brief gap when the user out-paces pre-generation.
-/// A quiet spinner, nothing else (architecture.md §Generation strategy).
+/// Step 0's wait (model load + first generation can take a while on
+/// device), or the brief gap when the user out-paces pre-generation. A
+/// quiet spinner plus a calm word so the wait reads as deliberate, not
+/// stuck (architecture.md §Generation strategy).
+///
+/// ⚠️ NEW COPY for project-lead review: [_label]. Kept gentle and
+/// non-clinical to match the app voice (no stock-chatbot phrasing); the
+/// owner requested a "thinking…" affordance — final wording is the lead's.
 class _Generating extends StatelessWidget {
   const _Generating();
 
+  static const _label = 'Thinking…';
+
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator());
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 20),
+          Text(
+            _label,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Reflection extends ConsumerWidget {

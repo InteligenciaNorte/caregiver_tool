@@ -46,8 +46,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     switch (ref.read(crisisRouterProvider)(situation)) {
       case GoSession(:final level):
         // NONE/LOW/MEDIUM all run the session; the level decides whether
-        // the MEDIUM helpline card is pinned (read in SessionScreen).
-        ref.read(sessionProvider.notifier).start(level);
+        // the MEDIUM helpline card is pinned (read in SessionScreen). The
+        // situation is the model's opening user turn — passed in, not
+        // persisted (CLAUDE.md Hard Rule #3).
+        ref.read(sessionProvider.notifier).start(level, situation);
         context.go('/session');
       case GoCrisis():
         context.go('/crisis');

@@ -20,19 +20,39 @@ Future<void> _pumpApp(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+// Onboarding is an intentional 4-page PageView (what / examples / privacy
+// / ready). A user reaches "Begin" by tapping "Next" three times, so the
+// smoke test drives it the same way. Assertions stay structural (the Next
+// button, the privacy guarantee, Begin) so lead-owned example-copy
+// revisions don't re-break this test.
+Future<void> _advanceOnboarding(WidgetTester tester) async {
+  final next = find.widgetWithText(FilledButton, 'Next');
+  expect(next, findsOneWidget);
+
+  // Page 1 -> 2.
+  await tester.tap(next);
+  await tester.pumpAndSettle();
+  await tester.tap(next);
+  await tester.pumpAndSettle();
+
+  // Page 3 (privacy): the offline guarantee is on this page.
+  expect(find.textContaining('Nothing leaves your phone'), findsOneWidget);
+
+  // Page 3 -> 4 (ready). The external Next button disappears on the
+  // last page; "Begin" lives inside the PageView.
+  await tester.tap(next);
+  await tester.pumpAndSettle();
+
+  final begin = find.widgetWithText(FilledButton, 'Begin');
+  expect(begin, findsOneWidget);
+  await tester.tap(begin);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('onboarding -> home -> session -> home', (tester) async {
     await _pumpApp(tester);
-
-    // Onboarding renders: privacy line + an example card + Begin.
-    expect(find.textContaining('Nothing leaves your phone'), findsOneWidget);
-    expect(find.textContaining("She just wanted her sweater"), findsOneWidget);
-    final begin = find.widgetWithText(FilledButton, 'Begin');
-    await tester.scrollUntilVisible(begin, 250,
-        scrollable: find.byType(Scrollable).first);
-
-    await tester.tap(begin);
-    await tester.pumpAndSettle();
+    await _advanceOnboarding(tester);
 
     // Home: hint shown, Continue disabled until text entered.
     expect(
@@ -68,12 +88,7 @@ void main() {
 
   testWidgets('home -> crisis screen -> home', (tester) async {
     await _pumpApp(tester);
-
-    final begin = find.widgetWithText(FilledButton, 'Begin');
-    await tester.scrollUntilVisible(begin, 250,
-        scrollable: find.byType(Scrollable).first);
-    await tester.tap(begin);
-    await tester.pumpAndSettle();
+    await _advanceOnboarding(tester);
 
     // Crisis link in the header on Home.
     await tester.tap(find.text('I need help right now'));

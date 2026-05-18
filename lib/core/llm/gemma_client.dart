@@ -81,13 +81,40 @@ abstract interface class GemmaClient {
 }
 
 /// The client seam. Defaults to the mock so the whole app runs with no
-/// model (emulator, tests, CI). `RealGemmaClient` overrides this provider
-/// in `main.dart` once it lands — no call-site changes (mirrors the
-/// `classifyProvider` seam pattern in `crisis_router.dart`).
+/// model (emulator, tests, CI). For a real-device build, override this in
+/// `main.dart` with a `RealGemmaClient`, e.g.:
+///
+/// ```dart
+/// gemmaClientProvider.overrideWith((ref) {
+///   final c = RealGemmaClient(ref.watch(modelPathProvider));
+///   ref.onDispose(c.shutdown);
+///   return c;
+/// }),
+/// ```
+///
+/// No call-site changes either way (mirrors the `classifyProvider` seam in
+/// `crisis_router.dart`). Kept on the mock here so the emulator and the
+/// whole test suite stay model-free.
 final gemmaClientProvider = Provider<GemmaClient>((ref) {
   final client = MockGemmaClient();
   ref.onDispose(client.shutdown);
   return client;
+});
+
+/// Absolute on-device path to `gemma4-e2b_r32-q4_k_m.gguf`. Storage is a
+/// separate concern from inference, so [RealGemmaClient] takes the path
+/// rather than resolving it. Like `prefsProvider`, this must be overridden:
+/// - dev: the side-loaded path (e.g. the app's files dir via `adb`);
+/// - production: the downloaded model's path (download-on-first-launch per
+///   hosting-guide; that resolver will need a path/storage dependency —
+///   to be decided with the owner, not added here unilaterally).
+/// Unset by default so a misconfiguration fails loudly, never silently
+/// pointing the model loader at nothing.
+final modelPathProvider = Provider<String>((ref) {
+  throw UnimplementedError(
+    'modelPathProvider must be overridden with the on-device path to '
+    'gemma4-e2b_r32-q4_k_m.gguf (side-loaded for dev; downloaded for prod).',
+  );
 });
 
 /// System-prompt loader seam. Production loads the bundled asset verbatim

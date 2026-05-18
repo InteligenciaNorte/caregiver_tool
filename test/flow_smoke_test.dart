@@ -130,11 +130,29 @@ void main() {
     expect(find.textContaining('session flow is not built yet'),
         findsOneWidget);
     expect(find.textContaining("people who can help right now"), findsNothing);
-    // ...with the helpline card pinned.
+    // ...with the helpline card pinned, collapsed by default (slim bar,
+    // resource one tap away, never auto-dismissed).
     expect(find.byType(HelplineCard), findsOneWidget);
     expect(
       find.widgetWithText(FilledButton, 'Call 988 (US Suicide & Crisis Lifeline)'),
+      findsNothing,
+    );
+
+    // Tapping the bar reveals the call action; it can never be removed.
+    await tester.tap(find.byKey(const Key('helplineExpand')));
+    await tester.pumpAndSettle();
+    expect(
+      find.widgetWithText(FilledButton, 'Call 988 (US Suicide & Crisis Lifeline)'),
       findsOneWidget,
+    );
+
+    // Collapse returns to the slim bar — still pinned, not gone.
+    await tester.tap(find.byKey(const Key('helplineCollapse')));
+    await tester.pumpAndSettle();
+    expect(find.byType(HelplineCard), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, 'Call 988 (US Suicide & Crisis Lifeline)'),
+      findsNothing,
     );
   });
 }

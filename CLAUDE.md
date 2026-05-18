@@ -64,12 +64,20 @@ lives in memory and is gone on app close.
   the classified `RiskLevel`; `sessionProvider` holds it; `SessionScreen`
   pins the card when `risk == medium`. NONE/LOW are unchanged (no card).
   Classifier untouched (Hard Rule #5; verified byte-identical). Smoke
-  test `MEDIUM situation -> session with pinned helpline card` guards it.
-  Two follow-ups before live deploy: (1) the card's `_framingLine` is
-  **new copy pending project-lead review** (the 988/Alzheimer's labels
-  reuse approved crisis-screen copy verbatim); (2) the card is pinned in
-  the session *shell* — re-confirm placement once the real step state
-  machine lands so it stays visible on every step.
+  test `MEDIUM situation -> session with pinned helpline card` guards it
+  (expand/collapse covered). The card is **collapsible but never
+  removable**: default a slim one-line bar; tap to reveal a single 988
+  action; collapse returns to the bar. It does not duplicate the full
+  resource list — 988 + Alzheimer's stay reachable via the always-present
+  "I need help right now" header link on the session screen.
+  Safety-owner review items before live deploy: (1) `_supportLine` is
+  **new copy pending project-lead review** (only new string; the 988
+  button label reuses approved crisis-screen copy verbatim); (2) the
+  **default-collapsed** state and the **single-988-in-card** reduction
+  were project-owner UX decisions (2026-05-18) — confirm with the
+  safety owner that a collapsed-by-default affordance is sufficiently
+  prominent for the MEDIUM cohort; (3) the card is pinned in the session
+  *shell* — re-confirm placement once the real step state machine lands.
 
 ## Tech Stack (locked)
 

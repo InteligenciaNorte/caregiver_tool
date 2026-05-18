@@ -36,16 +36,35 @@ lives in memory and is gone on app close.
    typed input or session content. The only allowed SharedPreferences key is
    `onboarding_seen` (boolean).
 4. **NO login, account, email field, or share buttons.**
-5. **Crisis classifier rules are owned by the ML engineer.** Do not edit
-   logic in `lib/core/crisis/classifier.dart`. The Dart API is locked:
+5. **Crisis classifier is now AUTHORED (safety-critical).**
+   `lib/core/crisis/classifier.dart` is implemented against the locked
+   Dart API below. Do NOT edit the classifier logic, regex tables, layer
+   thresholds, suppression rules, or `docs/classifier_research.md`
+   without **explicit project-lead domain-review approval recorded in the
+   PR** (copy/safety owner sign-off). This is a safety-critical file;
+   "obvious" tweaks are exactly the failure mode. The Dart API is locked:
    ```dart
    enum RiskLevel { none, low, medium, high, acute }
    RiskLevel classify(String situation);
    ```
-   You wire the router and UI against this signature; you don't tune the rules.
+   You wire the router and UI against this signature; you don't tune the
+   rules. Routing policy (`routeFor`) and the MEDIUM helpline-card UI are
+   developer-owned and may change without classifier review.
 6. **Calibrated copy is owned by the project lead.** Do not change wording
    on onboarding cards, the crisis screen, the Home hint, or session-step UI
    text without asking. Layout, spacing, colors are fair game; words are not.
+
+## Known gaps (MUST close before any live deployment)
+
+- **MEDIUM has no UI yet.** The classifier is live and now emits MEDIUM
+  (L3 passive ideation, bare self-burdensomeness, obfuscation). Per
+  `docs/architecture.md` §Safety, MEDIUM should run the session **with a
+  persistent helpline card pinned on every step**. That card is **not
+  built**. Until it is, MEDIUM is behaviorally indistinguishable from LOW
+  (session runs, no helpline surfaced) — i.e. MEDIUM silently degrades to
+  LOW. This is a known, accepted gap for development only. It **must be
+  closed before any live/demo deployment**; do not ship with MEDIUM
+  un-surfaced. Tracked as a developer-owned UI follow-up.
 
 ## Tech Stack (locked)
 

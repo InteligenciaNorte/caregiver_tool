@@ -114,7 +114,7 @@ Three layers run in order on the user's typed situation:
 Routing is purely a UI decision — the model behaves identically regardless of risk level:
 
 - **NONE / LOW** — session proceeds normally.
-- **MEDIUM** — session proceeds normally, with a prominent in-screen card showing helpline info pinned on every step of the session. The model is unaware; this is a UI reminder only.
+- **MEDIUM** — session proceeds normally, with a prominent in-screen card showing helpline info pinned on every step of the session. The model is unaware; this is a UI reminder only. **⚠️ KNOWN GAP (must close before any live deployment): the classifier is live and emits MEDIUM, but the pinned helpline card is NOT yet built. Until it ships, MEDIUM silently degrades to LOW (session runs, no helpline surfaced). Do not deploy/demo with MEDIUM un-surfaced. See CLAUDE.md "Known gaps".**
 - **HIGH / ACUTE** — the session never starts. A full-screen crisis overlay replaces the screen, with helpline call buttons (`tel:` URIs). Never auto-dismisses; the user must explicitly return. No model call happens.
 
 The classifier runs **once per session**, on the initial situation typed at Home. The four steps after that are Continue taps with no new user text, so no re-classification is needed.

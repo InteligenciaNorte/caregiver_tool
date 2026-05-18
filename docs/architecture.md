@@ -27,7 +27,7 @@ Three goals:
 Layout is a **paged flow of four pages**, each with a clear forward button — `Next` on pages 1–3, `Begin` on a dedicated final page. The user can swipe or tap to advance. There is no skip button, no close button, no "I'll do this later." The pages:
 
 1. **What it is** — names who this is for and how it works, so the app explains itself rather than leaving the user to infer it. Heading along the lines of *"For the moments no one prepared you for"*, with a short body that says it's for caregivers of someone with dementia, that they write what they're carrying and are met with understanding (not advice), in about five minutes.
-2. **Examples** — a short heading (*"Other caregivers come here with things like this"*) followed by several very short example fragments rendered together as chips/pills. They match the disclosure style the model was trained on — concrete, first-person, shame-adjacent — but trimmed to a phrase so they read at a glance rather than as a wall of text. Draft fragments: *"snapped at mom again"*, *"relieved when he was hospitalized"*, *"wished it would end"*, *"froze when she hit me"*, *"couldn't go in this morning"*. Showing all fragments together on this one page preserves the cumulative *"many people come here with hard things"* effect — the reason the examples are not spread one-per-page.
+2. **Examples** — a short heading followed by several very short example fragments rendered together as chips/pills. They match the disclosure style the model was trained on — concrete, first-person, shame-adjacent — but trimmed to a phrase so they read at a glance rather than as a wall of text. The exact lead-approved heading and fragment list are the source of truth in code, not duplicated here: `_examplesHeading` and `_examples` in `lib/features/onboarding/onboarding_screen.dart` (the lead iterates this copy independently of this doc; it was last revised 2026-05-17). Showing all fragments together on this one page preserves the cumulative *"many people come here with hard things"* effect — the reason the examples are not spread one-per-page.
 3. **Privacy** — makes the offline/on-device posture explicit and credible: a heading (*"What you write stays with you"*), a short body explaining it runs entirely on the phone with no internet, no account, no cloud, and the existing one-line assurance verbatim: *"Nothing leaves your phone. Nothing is saved between sessions."*
 4. **Ready** — a brief closing line (*"Ready when you are"*) whose only action is the `Begin` button.
 
@@ -134,6 +134,8 @@ await engine.loadModel(
 ```
 
 Context 2048 is sufficient for the full 4-step ChatML conversation including the system prompt. Q4_K_M is the single deployment quantization for both Android and iOS, sized for 8 GB devices (Samsung S23, iPhone 16 Pro Max) including KV cache and runtime overhead.
+
+Generation parameters are fixed by the ML engineer in `inference_config.json` (the authoritative source — the runtime must be wired against that file, not these hardcoded values, when the LLM layer lands): `temperature` 1.0, `top_p` 0.95, `top_k` 64, `repeat_penalty` 1.0, `max_new_tokens` 400, and stop token `<turn|>`. These are tuning outputs of the fine-tune, not app-level choices — do not change them in app code. (The same file also restates `context_size: 2048`; LoRA rank 8, model file ~3.4 GB.)
 
 The model loads once at app startup behind a splash screen and stays resident for the rest of the launch.
 

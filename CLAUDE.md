@@ -110,16 +110,19 @@ lives in memory and is gone on app close.
 - `assets/prompts/witnessing_hard_moments.txt` — ML engineer file; do not
   edit content, only load. A placeholder is fine for development.
 
-## Two unresolved values (placeholders OK)
+## ML-engineer values (one still unresolved)
 
-These come from the ML engineer. Placeholders are acceptable until they land;
-both replace cleanly with no other code changes.
+These come from the ML engineer. A placeholder is acceptable until it lands;
+it replaces cleanly with no other code changes.
 
-1. **Continue-marker string** — the user-turn content between assistant steps
-   in ChatML. Use a `kContinueMarker` constant. Placeholder: `"<continue>"`.
-2. **System prompt content** — `assets/prompts/witnessing_hard_moments.txt`
-   exists with a short placeholder. Do not assume the placeholder content
-   reflects production model behavior.
+1. **Continue-marker string** — UNRESOLVED. The user-turn content between
+   assistant steps in ChatML. Use a `kContinueMarker` constant. Placeholder:
+   `"<continue>"`. (Note: `inference_config.json` specifies a *stop* token
+   `"<turn|>"`, which is a different thing — not the continue marker.)
+2. **System prompt content** — RESOLVED 2026-05-18. The production system
+   prompt has landed: `assets/prompts/witnessing_hard_moments.txt` (~3.3 KB)
+   is byte-identical to the ML engineer's delivered `system_prompt.txt`. It
+   is no longer a placeholder; load it verbatim, do not edit it.
 
 ## Session failure behavior
 

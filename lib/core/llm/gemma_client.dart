@@ -101,6 +101,11 @@ final gemmaClientProvider = Provider<GemmaClient>((ref) {
   return client;
 });
 
+/// True only on real-device builds (`--dart-define=USE_REAL_MODEL=true`,
+/// set in main.dart). Gates the download-on-first-launch screen so the
+/// emulator, tests and CI (mock, no model) never see it.
+final realModelEnabledProvider = Provider<bool>((ref) => false);
+
 /// Absolute on-device path to `gemma4-e2b_r32-q4_k_m.gguf`. Storage is a
 /// separate concern from inference, so [RealGemmaClient] takes the path
 /// rather than resolving it. Like `prefsProvider`, this must be overridden:

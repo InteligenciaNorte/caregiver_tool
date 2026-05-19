@@ -15,6 +15,10 @@ dependencies:
   go_router: ^14.6.0
   url_launcher: ^6.3.0
   shared_preferences: ^2.3.2
+  # Block 2 (download-on-first-launch). Networking uses built-in dart:io
+  # (no http/dio package — CLAUDE.md Hard Rule #2). Owner-approved deps:
+  path_provider: ^2.1.4 # writable app dir for the downloaded GGUF
+  crypto: ^3.0.3 # streaming SHA-256 verify of the downloaded model
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,13 +10,23 @@ import '../../core/llm/model_store.dart';
 /// onboarding (the emulator/tests use the mock and never reach this).
 /// After this, everything runs on-device with no network.
 ///
-/// ⚠️ NEW COPY for project-lead review: the strings here. Calm,
-/// non-clinical, sets the one-time-wait expectation; consistent with the
-/// flagging of `_supportLine` / `_Failed._message` / `_Generating._label`.
-/// NOTE for the lead: shipping a download also makes the onboarding
-/// privacy line ("Nothing leaves your phone") read as network-free — that
-/// calibrated copy may need a one-time-download caveat. Owner's call;
-/// not changed here.
+/// The download is **user-initiated**: nothing is fetched until the person
+/// taps "Download". Before that there is no network call, no progress, no
+/// spinner — only the explanation and the choice. This is the product
+/// owner's requirement (don't spend ~3.4 GB of someone's data without an
+/// explicit yes).
+///
+/// ⚠️ NEW COPY + ONE BEHAVIOUR for project-lead review:
+///  - the consent strings here (calm, non-clinical, sets the one-time
+///    expectation; consistent with the flagging of `_supportLine` /
+///    `_Failed._message` / `_Generating._label`);
+///  - "Not now" closes the app (`SystemNavigator.pop`) — honest, since
+///    nothing in the app works without the model, but it is a UX call the
+///    owner should confirm. Easy to change to "stay on this screen".
+/// NOTE for the lead: the consent copy now states the download is the only
+/// network use and that nothing written ever leaves the phone — this also
+/// answers the earlier concern that shipping a download muddied the
+/// onboarding "nothing leaves your phone" line. Owner's call on final copy.
 class ModelDownloadScreen extends ConsumerStatefulWidget {
   const ModelDownloadScreen({super.key});
 
@@ -25,11 +36,27 @@ class ModelDownloadScreen extends ConsumerStatefulWidget {
 }
 
 class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
+  /// Dev builds keep the old fast path: a side-loaded model means there is
+  /// nothing to download and no reason to ask. Empty in production →
+  /// the consent gate applies.
+  static const _devModelPath = String.fromEnvironment('DEV_MODEL_PATH');
+
+  /// False until the person opts in (or a dev model path bypasses it).
+  /// Gates the status-driven UI so no fetch happens before consent.
+  bool _started = false;
+
   @override
   void initState() {
     super.initState();
-    // Fire-and-forget; the screen renders state as it progresses.
-    Future.microtask(() => ref.read(modelStoreProvider.notifier).ensure());
+    if (_devModelPath.isNotEmpty) {
+      _started = true;
+      Future.microtask(() => ref.read(modelStoreProvider.notifier).ensure());
+    }
+  }
+
+  void _startDownload() {
+    setState(() => _started = true);
+    ref.read(modelStoreProvider.notifier).ensure();
   }
 
   String _mb(int b) => '${(b / (1 << 20)).toStringAsFixed(0)} MB';
@@ -44,58 +71,90 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       if (next is ModelReady && context.mounted) context.go('/onboarding');
     });
 
-    final (String title, Widget body) = switch (status) {
-      ModelError(:final message) => (
-          'Setting up',
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () =>
-                      ref.read(modelStoreProvider.notifier).retry(),
-                  child: const Text('Try again'),
+    final (String title, String blurb, Widget body) = !_started
+        ? (
+            'One-time setup',
+            'KindNow runs a private AI model entirely on your phone — '
+                'nothing you write ever leaves the device. The model is '
+                'about 3.4 GB and is downloaded once, now. Wi-Fi recommended.',
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _startDownload,
+                    child: const Text('Download (~3.4 GB)'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => SystemNavigator.pop(),
+                  child: const Text('Not now'),
+                ),
+              ],
+            ),
+          )
+        : switch (status) {
+            ModelError(:final message) => (
+                'Setting up',
+                'This happens once. The app downloads what it needs to run '
+                    'entirely on your phone — about 3.4 GB. Best on Wi-Fi.',
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () =>
+                            ref.read(modelStoreProvider.notifier).retry(),
+                        child: const Text('Try again'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ModelDownloading(:final received, :final total, :final fraction) => (
-          'Getting things ready',
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: fraction == 0 ? null : fraction,
-                  minHeight: 8,
+            ModelDownloading(:final received, :final total, :final fraction) =>
+              (
+                'Getting things ready',
+                'This happens once. The app downloads what it needs to run '
+                    'entirely on your phone — about 3.4 GB. Best on Wi-Fi.',
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: fraction == 0 ? null : fraction,
+                        minHeight: 8,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      total > 0
+                          ? '${_mb(received)} of ${_mb(total)}'
+                          : _mb(received),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                total > 0
-                    ? '${_mb(received)} of ${_mb(total)}'
-                    : _mb(received),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+            _ => (
+                'Getting things ready',
+                'This happens once. The app downloads what it needs to run '
+                    'entirely on your phone — about 3.4 GB. Best on Wi-Fi.',
+                const CircularProgressIndicator(),
               ),
-            ],
-          ),
-        ),
-      _ => (
-          'Getting things ready',
-          const CircularProgressIndicator(),
-        ),
-    };
+          };
 
     return Scaffold(
       body: SafeArea(
@@ -111,8 +170,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'This happens once. The app downloads what it needs to run '
-                'entirely on your phone — about 3.4 GB. Best on Wi-Fi.',
+                blurb,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),

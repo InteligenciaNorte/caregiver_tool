@@ -5,24 +5,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'core/data/prefs_provider.dart';
 import 'core/llm/gemma_client.dart';
+import 'core/llm/model_store.dart';
 import 'core/llm/real_gemma_client.dart';
 
 /// Dev switch: `--dart-define=USE_REAL_MODEL=true` runs the real on-device
-/// Gemma GGUF (a physical-device build). Unset — emulator, tests, CI —
-/// keeps the default `MockGemmaClient` (see `gemmaClientProvider`), so
-/// nothing model-bound changes there.
+/// Gemma GGUF (a physical-device build) and gates startup on the
+/// download-on-first-launch screen. Unset — emulator, tests, CI — keeps
+/// the default `MockGemmaClient` (see `gemmaClientProvider`) and no gate,
+/// so nothing model-bound changes there.
+///
+/// Fast dev iteration without re-downloading 3.4 GB: also pass
+/// `--dart-define=DEV_MODEL_PATH=/abs/path.gguf` (a side-loaded file);
+/// `ModelStore` uses it directly and skips the download.
 const bool _useRealModel = bool.fromEnvironment('USE_REAL_MODEL');
-
-/// Where the GGUF is side-loaded for the dev real-model test: the app's
-/// own *internal* files dir. The external (`Android/data/<pkg>`) dir is not
-/// usable here — on Android 11+ a file `adb push`ed there is not visible to
-/// the app (isolated FUSE view); the internal dir is read directly by the
-/// app with no permission. Populated via `adb exec-out run-as` (debug
-/// build is debuggable). Production resolves a downloaded path instead
-/// (hosting-guide / path_provider) — deferred, a separate decision.
-const String _devModelPath =
-    '/data/user/0/dev.inteligencianorte.caregiver_tool/files/'
-    'gemma4-e2b_r32-q4_k_m.gguf';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +27,14 @@ Future<void> main() async {
       overrides: [
         prefsProvider.overrideWithValue(prefs),
         if (_useRealModel) ...[
-          modelPathProvider.overrideWithValue(_devModelPath),
+          realModelEnabledProvider.overrideWithValue(true),
+          // The gate guarantees ModelReady before any session starts, so
+          // this resolves to the downloaded (or dev side-loaded) path.
+          modelPathProvider.overrideWith((ref) {
+            final s = ref.watch(modelStoreProvider);
+            if (s is ModelReady) return s.path;
+            throw StateError('model path read before the model was ready');
+          }),
           gemmaClientProvider.overrideWith((ref) {
             final client = RealGemmaClient(ref.watch(modelPathProvider));
             ref.onDispose(client.shutdown);

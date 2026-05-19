@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Used ONLY for the one-time model download on first launch (the
+         GGUF can't be bundled). After the model is fetched and
+         SHA-256-verified the app runs fully on-device: no further network,
+         no telemetry. Agreed production reversal of architecture.md's
+         "INTERNET not requested"; onboarding privacy copy is the lead's
+         to adjust. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="caregiver_tool"
         android:name="${applicationName}"

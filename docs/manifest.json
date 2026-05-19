@@ -1,0 +1,13 @@
+{
+  "model_version": "1.0.0",
+  "model_filename": "gemma4-e2b_r32-q4_k_m.gguf",
+  "size_bytes": 3427863872,
+  "sha256": "81ce0ae4a3fb37040faf37c6eedc0985f0d7fa291e8d17a9820937ccdab4158b",
+  "sources": [
+    {
+      "kind": "single",
+      "url": "https://huggingface.co/Serjio42/gemma4-e2b-finetuned-caregivers/resolve/2e94bc80e5c7745d63ed96a1c44b4c57139af56f/gemma4-e2b_r32-q4_k_m.gguf"
+    }
+  ],
+  "notes": "System prompt ships as a bundled app asset (assets/prompts/witnessing_hard_moments.txt, byte-identical to the model's system_prompt.txt). Inference params are pinned in app code from inference_config.json. Only the GGUF is downloaded. Served via GitHub Pages from main:/docs so the URL can change without an app update; pin a commit (not main) in the source URL."
+}

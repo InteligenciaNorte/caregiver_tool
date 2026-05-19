@@ -60,3 +60,12 @@ train/
 # before any release. See memory: project-root-artifacts-gitignored-temp.
 inference_config.json
 system_prompt.txt
+
+# Android release-signing secrets — NEVER commit. The keystore itself
+# lives outside the repo (~/.keystores/); key.properties holds its
+# passwords. Losing both = the app can never be re-signed with the same
+# identity (in-place updates break). The patterns below are defensive in
+# case a keystore is ever placed inside the tree by mistake.
+android/key.properties
+*.jks
+*.keystore

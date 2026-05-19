@@ -76,7 +76,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             'One-time setup',
             'KindNow runs a private AI model entirely on your phone — '
                 'nothing you write ever leaves the device. The model is '
-                'about 3.4 GB and is downloaded once, now. Wi-Fi recommended.',
+                'about 3.4 GB and is downloaded once. Wi-Fi recommended.',
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -94,7 +94,8 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Not now closes the app — KindNow needs the model to run.',
+                  'Not now will close the app,\n'
+                  'as the model presence is sufficient',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),

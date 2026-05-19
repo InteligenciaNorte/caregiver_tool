@@ -29,9 +29,14 @@ lives in memory and is gone on app close.
    `freezed_annotation`, `drift`, `drift_dev`, `riverpod_generator`,
    `json_serializable`, or `auto_route`. If a solution seems to require one,
    stop and find a no-codegen alternative.
-2. **NO network calls except `tel:` URIs** (crisis-resource dialer). Offline-
-   first. Do not add `dio`, `http`, `firebase_*`, `sentry_*`, `crashlytics`,
-   `posthog`, `mixpanel`, or any telemetry / analytics package.
+2. **NO network calls except `tel:` URIs** (crisis-resource dialer) **and
+   the one-time model download on first launch**. Offline-first. Do not add
+   `dio`, `http`, `firebase_*`, `sentry_*`, `crashlytics`, `posthog`,
+   `mixpanel`, or any telemetry / analytics package. The agreed exception
+   (the GGUF can't be bundled): a single model fetch on first launch via
+   built-in `dart:io` `HttpClient` — **no networking package** — then the
+   app is fully offline. INTERNET permission is requested for this only.
+   No telemetry/analytics ever.
 3. **NO persistence of user data.** No sqflite. No SharedPreferences for
    typed input or session content. The only allowed SharedPreferences key is
    `onboarding_seen` (boolean).
@@ -91,20 +96,36 @@ lives in memory and is gone on app close.
   the system prompt asset is loaded at startup; no JSON elsewhere.
 - Settings: `shared_preferences` (one boolean only, see Hard Rule #3)
 - LLM runtime: `llamadart` plugin wrapping llama.cpp
-- Model artifact: single `assets/model/gemma-4-E2B-it-Q4_K_M.gguf` (~3 GB),
-  produced by ML engineer via Unsloth → GGUF export
-- Inference config: `contextSize: 2048`, `gpuLayers: -1`, Q4_K_M
+- Model artifact: `gemma4-e2b_r32-q4_k_m.gguf` (~3.4 GB, Q4_K_M),
+  produced by ML engineer via Unsloth → GGUF export. **NOT bundled** (too
+  large for stores) and **not** at `assets/model/`. Delivery:
+  download-on-first-launch from Hugging Face
+  (`Serjio42/gemma4-e2b-finetuned-caregivers`, pinned commit) via a
+  `docs/manifest.json` served on GitHub Pages, SHA-256-verified; for dev,
+  side-loaded into the app's internal dir (`--dart-define=DEV_MODEL_PATH`).
+  When model-card / hosting-guide conflicts with project docs on how the
+  model is embedded/operated, the model card wins (owner decision).
+- Inference config: `contextSize: 2048`, Q4_K_M; sampling is taken
+  verbatim from `inference_config.json` (authoritative): temp 1.0,
+  top_p 0.95, top_k 64, repeat_penalty 1.0, **max_new_tokens 300**. Stop
+  tokens are baked into GGUF metadata — not configured in app code.
 - Conversation format: ChatML (system once, then user/assistant alternation)
 
 ## Build Commands
 
 - Install deps: `flutter pub get`
-- Run on connected device: `flutter run`
+- Run on connected device (mock LLM, no model): `flutter run`
+- Real model build (physical 8 GB+ device):
+  `flutter build apk --release --dart-define=USE_REAL_MODEL=true --target-platform android-arm64`
+- Dev fast loop without re-downloading 3.4 GB: add
+  `--dart-define=DEV_MODEL_PATH=/abs/path.gguf` (uses a side-loaded file)
 - Build debug APK: `flutter build apk --debug`
-- Build release APK: `flutter build apk --release`
 - Build iOS for testing: `flutter build ios --debug --no-codesign`
 - Static analysis: `flutter analyze` (must pass with zero errors)
 - Format: `dart format lib/`
+
+Without `USE_REAL_MODEL`, the app runs the deterministic `MockGemmaClient`
+and the model-download gate is inert (emulator, tests, CI).
 
 ## Directory Ownership
 
@@ -128,10 +149,11 @@ lives in memory and is gone on app close.
 These come from the ML engineer. A placeholder is acceptable until it lands;
 it replaces cleanly with no other code changes.
 
-1. **Continue-marker string** — UNRESOLVED. The user-turn content between
-   assistant steps in ChatML. Use a `kContinueMarker` constant. Placeholder:
-   `"<continue>"`. (Note: `inference_config.json` specifies a *stop* token
-   `"<turn|>"`, which is a different thing — not the continue marker.)
+1. **Continue-marker string** — RESOLVED 2026-05-19. The model card is the
+   authoritative source: the literal string `"Continue"`, sent 3× after the
+   opening situation. Implemented as `kContinueMarker = 'Continue'`
+   (`lib/core/llm/gemma_client.dart`). The old `"<continue>"` placeholder is
+   superseded.
 2. **System prompt content** — RESOLVED 2026-05-18. The production system
    prompt has landed: `assets/prompts/witnessing_hard_moments.txt` (~3.3 KB)
    is byte-identical to the ML engineer's delivered `system_prompt.txt`. It
@@ -150,10 +172,15 @@ If a step generation fails or times out mid-session:
 
 ## Workflow Conventions
 
-- Ask before adding any new dependency.
+- Ask before adding any new dependency. (Added with owner approval
+  2026-05-19: `path_provider`, `crypto` — for the model download/verify.)
 - Ask before changing any user-facing copy.
 - Run `flutter analyze` after every meaningful change. Zero errors required.
 - Run on a real Android device daily, not just emulator.
+- **Git: never push to `main`. Every change in its own new branch; merge
+  to `main` only on the owner's explicit request, by the owner. Merged
+  branches are deleted (`delete_branch_on_merge` is on for the repo;
+  delete the local branch + `git fetch --prune` after a merge).**
 - Commit at end of each day.
 
 ## What to do when stuck
@@ -179,3 +206,51 @@ no longer exists.)
 
 Both devices have hard memory constraints. Watch for OOM kills, especially
 on iOS where they are silent.
+
+## Status sync — 2026-05-19
+
+All of this session's work is on `main` (merged via PRs #3–#5; branches
+auto-deleted). `main` is never force-pushed.
+
+- **LLM layer + 4-step session**: `GemmaClient` + `MockGemmaClient` +
+  `RealGemmaClient` (`llamadart`), the sealed 4-step session state machine,
+  ChatML assembly, one silent retry then honest `StepFailed`, background
+  pre-generation, real `session_screen` with the pinned MEDIUM helpline
+  card, a "Thinking…" wait label. Done/Close clears the situation
+  (architecture.md §Privacy). `analyze` clean; 41 tests green.
+- **Download-on-first-launch (PR #4)**: `docs/manifest.json` (served via
+  GitHub Pages), `ModelStore` (resumable `dart:io` download — no http/dio
+  package — streaming SHA-256 via `crypto`, friendly retry), the
+  `ModelDownloadScreen` gate (`realModelEnabledProvider`, default false →
+  emulator/tests/CI never see it), INTERNET permission. The download is
+  currently **auto-started** on first launch; a user-initiated consent
+  button is the planned next iteration.
+- **Display name "KindNow" (PR #5)**: Android label, iOS
+  Display/BundleName, MaterialApp title, README H1. The Dart package,
+  `applicationId` (`dev.inteligencianorte.caregiver_tool`) and the GitHub
+  repo name stay `caregiver_tool` — do not change these.
+
+Verified on a Pixel 9 emulator (mock) and a physical Galaxy S23 (real
+fine-tuned model): full flow, real on-device reflections, no OOM on fresh
+RAM. The download path was verified end-to-end on the S23 — ~3.4 GB
+fetched from Hugging Face via the Pages manifest, **resumed correctly
+after a real network interruption**, SHA-256 passed, model loaded — and an
+app update (same signing key) does **not** re-download (the "download
+once" guarantee holds). Public repo; Releases `v0.1.0` (demo) and `v0.2.0`
+(Block 2 + KindNow).
+
+Licensing RESOLVED: Gemma 4 is Apache-2.0 (verified from Google's HF
+metadata). `LICENSE` (Apache-2.0) in repo; model public on HF
+(`Serjio42/gemma4-e2b-finetuned-caregivers`).
+
+Git: repo-local author is `InteligenciaNorte
+<inteligencia.norte2026@gmail.com>`. Past commits are NOT rewritten
+(owner decision); history is never force-pushed.
+
+**Copy pending project-lead review** (Hard Rule #6 — flagged in code):
+`_supportLine`, `_Failed._message`, `_Generating._label` ("Thinking…"),
+the `ModelDownloadScreen` strings, and the onboarding privacy line
+("Nothing leaves your phone") which now needs a one-time-download caveat.
+
+Open / next: user-initiated download button; a real release keystore
+(currently debug-signed — fine for the demo, not store distribution).

@@ -11,7 +11,7 @@ class CaregiverApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Caregiver Tool',
+      title: 'KindNow',
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.dark,

@@ -209,38 +209,48 @@ on iOS where they are silent.
 
 ## Status sync — 2026-05-19
 
-Implemented this session (each on its own branch, pending the owner's
-merge — `main` is untouched per the git rule):
+All of this session's work is on `main` (merged via PRs #3–#5; branches
+auto-deleted). `main` is never force-pushed.
 
-- **LLM layer + 4-step session** (`feat/...` → merged via PRs): `GemmaClient`
-  interface + `MockGemmaClient` + `RealGemmaClient` (`llamadart`), the
-  sealed 4-step session state machine, ChatML assembly, one silent retry
-  then honest `StepFailed`, background pre-generation, real flow in
-  `session_screen` with the pinned MEDIUM helpline card. Done/Close clears
-  the situation (architecture.md §Privacy). `analyze` clean; 41 tests.
-- **`feat/model-download`**: download-on-first-launch — `docs/manifest.json`
-  (GitHub Pages), `ModelStore` (resumable `dart:io` download, streaming
-  SHA-256 via `crypto`, retry), `ModelDownloadScreen`, router gate
-  (`realModelEnabledProvider`, default false → emulator/tests unaffected),
-  INTERNET permission.
-- **`chore/rename-kindnow`**: app **display name → "KindNow"** (Android
-  label, iOS Display/BundleName, MaterialApp title, README H1). The Dart
-  package, `applicationId` (`dev.inteligencianorte.caregiver_tool`) and the
-  GitHub repo name stay `caregiver_tool` — do not change these.
+- **LLM layer + 4-step session**: `GemmaClient` + `MockGemmaClient` +
+  `RealGemmaClient` (`llamadart`), the sealed 4-step session state machine,
+  ChatML assembly, one silent retry then honest `StepFailed`, background
+  pre-generation, real `session_screen` with the pinned MEDIUM helpline
+  card, a "Thinking…" wait label. Done/Close clears the situation
+  (architecture.md §Privacy). `analyze` clean; 41 tests green.
+- **Download-on-first-launch (PR #4)**: `docs/manifest.json` (served via
+  GitHub Pages), `ModelStore` (resumable `dart:io` download — no http/dio
+  package — streaming SHA-256 via `crypto`, friendly retry), the
+  `ModelDownloadScreen` gate (`realModelEnabledProvider`, default false →
+  emulator/tests/CI never see it), INTERNET permission. The download is
+  currently **auto-started** on first launch; a user-initiated consent
+  button is the planned next iteration.
+- **Display name "KindNow" (PR #5)**: Android label, iOS
+  Display/BundleName, MaterialApp title, README H1. The Dart package,
+  `applicationId` (`dev.inteligencianorte.caregiver_tool`) and the GitHub
+  repo name stay `caregiver_tool` — do not change these.
 
-Verified: full flow on a Pixel 9 emulator (mock) and a physical Galaxy S23
-(real fine-tuned model, no OOM on fresh RAM; debug load ~50–60 s, release
-lighter). Public repo + Release `v0.1.0` (debug-signed demo APK).
+Verified on a Pixel 9 emulator (mock) and a physical Galaxy S23 (real
+fine-tuned model): full flow, real on-device reflections, no OOM on fresh
+RAM. The download path was verified end-to-end on the S23 — ~3.4 GB
+fetched from Hugging Face via the Pages manifest, **resumed correctly
+after a real network interruption**, SHA-256 passed, model loaded — and an
+app update (same signing key) does **not** re-download (the "download
+once" guarantee holds). Public repo; Releases `v0.1.0` (demo) and `v0.2.0`
+(Block 2 + KindNow).
 
 Licensing RESOLVED: Gemma 4 is Apache-2.0 (verified from Google's HF
-metadata). `LICENSE` (Apache-2.0) added; model published public on HF.
+metadata). `LICENSE` (Apache-2.0) in repo; model public on HF
+(`Serjio42/gemma4-e2b-finetuned-caregivers`).
 
-**Copy pending project-lead review** (Hard Rule #6 — flagged in code, not
-finalized): `_supportLine`, `_Failed._message`, `_Generating._label`
-("Thinking…"), the `ModelDownloadScreen` strings, and the onboarding
-privacy line ("Nothing leaves your phone") which now needs a
-one-time-download caveat. Wording is the lead's call.
+Git: repo-local author is `InteligenciaNorte
+<inteligencia.norte2026@gmail.com>`. Past commits are NOT rewritten
+(owner decision); history is never force-pushed.
 
-Open: owner merges the feature branches → rebuild release arm64 + new
-Release (v0.2.0) → manifest goes live on Pages → verify the real download
-on-device. A real release keystore (currently debug-signed) is still TODO.
+**Copy pending project-lead review** (Hard Rule #6 — flagged in code):
+`_supportLine`, `_Failed._message`, `_Generating._label` ("Thinking…"),
+the `ModelDownloadScreen` strings, and the onboarding privacy line
+("Nothing leaves your phone") which now needs a one-time-download caveat.
+
+Open / next: user-initiated download button; a real release keystore
+(currently debug-signed — fine for the demo, not store distribution).

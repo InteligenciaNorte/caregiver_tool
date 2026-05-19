@@ -1,7 +1,7 @@
-# caregiver_tool
+# KindNow
 
 An **offline, on-device** Flutter app for family caregivers of people with
-dementia. It runs one short, evidence-based exercise — *Witnessing Hard
+dementia. (Package / repo id: `caregiver_tool`.) It runs one short, evidence-based exercise — *Witnessing Hard
 Moments with Compassion* — when a caregiver is sitting with a shame-laden
 moment (snapped at a parent, felt relief at a hospitalization, a dark
 thought they can't say out loud).

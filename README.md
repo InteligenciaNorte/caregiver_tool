@@ -68,11 +68,17 @@ card). For the demo build it is side-loaded into the app's private storage
 on the test device. Production delivery is download-on-first-launch from a
 public model host (planned).
 
-Model repository / card: **<ADD: Hugging Face model URL>**
+Model card / weights (public, not gated):
+**https://huggingface.co/Serjio42/gemma4-e2b-finetuned-caregivers**
 
-The model is a fine-tuned derivative of Google Gemma 4 E2B — its license
-and usage terms are those stated on the model card; consult it before
-redistributing the weights.
+For reproducible downloads, pin the commit rather than `main`:
+
+```
+https://huggingface.co/Serjio42/gemma4-e2b-finetuned-caregivers/resolve/2e94bc80e5c7745d63ed96a1c44b4c57139af56f/gemma4-e2b_r32-q4_k_m.gguf
+```
+
+`sha256(gemma4-e2b_r32-q4_k_m.gguf)` =
+`81ce0ae4a3fb37040faf37c6eedc0985f0d7fa291e8d17a9820937ccdab4158b`.
 
 ## Status
 
@@ -82,3 +88,13 @@ redistributing the weights.
 - `flutter analyze` clean; 39 tests green.
 - The release APK is currently signed with the Flutter debug key
   (template default) — fine for a demo, not for store distribution.
+
+## License
+
+Licensed under the **Apache License 2.0** — see [`LICENSE`](LICENSE).
+
+The on-device model is a fine-tuned derivative of **Google Gemma 4 E2B**,
+released by Google under the Apache License 2.0
+(<https://ai.google.dev/gemma/docs/gemma_4_license>). Fine-tuned with LoRA
+(rank 32), merged and quantized to Q4_K_M via llama.cpp. The derivative
+weights are distributed under Apache 2.0 on the model card linked above.

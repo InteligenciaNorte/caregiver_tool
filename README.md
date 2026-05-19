@@ -11,10 +11,10 @@ network, no account, no telemetry, and **nothing is saved between
 sessions** — the typed situation and the conversation live in memory only
 and are gone when the session ends.
 
-> Hackathon submission. This is a **demo build**: the ~3.4 GB model is not
-> bundled in the APK (it exceeds store limits) and is side-loaded onto the
-> test device. A "download the model on first launch" path is the planned
-> next step (see *Model* below).
+> Hackathon submission. The ~3.4 GB model is **not** bundled in the APK
+> (it exceeds store limits); on first launch the app offers a one-time,
+> user-initiated download (see *Model* below), after which everything
+> runs offline.
 
 ## How it works
 
@@ -58,15 +58,17 @@ flutter build apk --release --dart-define=USE_REAL_MODEL=true \
 
 `USE_REAL_MODEL=true` switches the LLM provider to the real
 `llamadart`-backed client; unset (emulator, tests, CI) keeps the mock, so
-the whole app and its 39 tests run with no model.
+the whole app and its 42 tests run with no model.
 
 ## Model
 
 The fine-tuned Gemma 4 E2B GGUF (`gemma4-e2b_r32-q4_k_m.gguf`, ~3.4 GB,
 Q4_K_M) is **not** in this repo (size + licensing live with the model
-card). For the demo build it is side-loaded into the app's private storage
-on the test device. Production delivery is download-on-first-launch from a
-public model host (planned).
+card). On first launch the real-model build shows a consent screen and,
+once the user taps **Download**, fetches the GGUF over HTTPS into the
+app's private storage and verifies its SHA-256. It is downloaded **once**
+and reused across app updates; nothing else uses the network. Dev builds
+can side-load via `--dart-define=DEV_MODEL_PATH=…`.
 
 Model card / weights (public, not gated):
 **https://huggingface.co/Serjio42/gemma4-e2b-finetuned-caregivers**
@@ -83,11 +85,23 @@ https://huggingface.co/Serjio42/gemma4-e2b-finetuned-caregivers/resolve/2e94bc80
 ## Status
 
 - Verified end-to-end on a Pixel 9 emulator (mock) and a physical Galaxy
-  S23 (real model): full onboarding → session → crisis flow, real
+  S23 (real model): full onboarding → session → crisis flow, the
+  user-initiated model download (resumable, SHA-256 verified), real
   reflections generated on-device, no OOM.
-- `flutter analyze` clean; 39 tests green.
-- The release APK is currently signed with the Flutter debug key
-  (template default) — fine for a demo, not for store distribution.
+- `flutter analyze` clean; 42 tests green.
+- Release APKs are signed with a dedicated release keystore (kept
+  outside the repo).
+
+### Platforms / roadmap
+
+- **Android — done.** The primary, fully working target: real on-device
+  model, user-initiated one-time download, release-signed APK.
+- **iOS — TODO.** Cross-platform validation only; not built or verified
+  this cycle.
+
+Known minor issues, deferred: bottom action buttons can overlap the
+Android system navigation bar; on-device generation runs on CPU and is
+slow (GPU offload is under investigation).
 
 ## License
 

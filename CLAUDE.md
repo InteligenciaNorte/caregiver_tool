@@ -58,6 +58,13 @@ lives in memory and is gone on app close.
 6. **Calibrated copy is owned by the project lead.** Do not change wording
    on onboarding cards, the crisis screen, the Home hint, or session-step UI
    text without asking. Layout, spacing, colors are fair game; words are not.
+7. **Release-signing secrets are never committed or read.** The Android
+   release keystore lives OUTSIDE the repo (`~/.keystores/`); its
+   passwords live only in `android/key.properties` (gitignored, chmod
+   600). Never `git add` a keystore or `key.properties`; never print,
+   `cat`, or otherwise surface the keystore password — it was generated
+   out of Claude's view on purpose. Gradle falls back to the debug key
+   when `key.properties` is absent so CI / other contributors still build.
 
 ## Known gaps (MUST close before any live deployment)
 
@@ -209,8 +216,10 @@ on iOS where they are silent.
 
 ## Status sync — 2026-05-19
 
-All of this session's work is on `main` (merged via PRs #3–#5; branches
-auto-deleted). `main` is never force-pushed.
+Work to date is on `main` (PRs #3–#6; branches auto-deleted). Open
+branch `feat/download-consent` (user-initiated consent gate + real
+release keystore + copy tweaks) is pushed and PR'd, **pending the
+owner's merge** → planned Release `v0.3.0`. `main` is never force-pushed.
 
 - **LLM layer + 4-step session**: `GemmaClient` + `MockGemmaClient` +
   `RealGemmaClient` (`llamadart`), the sealed 4-step session state machine,
@@ -223,8 +232,10 @@ auto-deleted). `main` is never force-pushed.
   package — streaming SHA-256 via `crypto`, friendly retry), the
   `ModelDownloadScreen` gate (`realModelEnabledProvider`, default false →
   emulator/tests/CI never see it), INTERNET permission. The download is
-  currently **auto-started** on first launch; a user-initiated consent
-  button is the planned next iteration.
+  **user-initiated** (`feat/download-consent`, PR pending): a consent
+  screen explains it and fetches nothing until the person taps "Download
+  (~3.4 GB)"; "Not now" closes the app (the model is required). Dev
+  builds (`DEV_MODEL_PATH`) keep the side-load fast path.
 - **Display name "KindNow" (PR #5)**: Android label, iOS
   Display/BundleName, MaterialApp title, README H1. The Dart package,
   `applicationId` (`dev.inteligencianorte.caregiver_tool`) and the GitHub
@@ -252,5 +263,24 @@ Git: repo-local author is `InteligenciaNorte
 the `ModelDownloadScreen` strings, and the onboarding privacy line
 ("Nothing leaves your phone") which now needs a one-time-download caveat.
 
-Open / next: user-initiated download button; a real release keystore
-(currently debug-signed — fine for the demo, not store distribution).
+**Release signing DONE** (`feat/download-consent`): real keystore
+(`~/.keystores/kindnow-release.jks`, PKCS12, outside the repo; passwords
+in gitignored `android/key.properties`; see Hard Rule #7). Switching
+debug→release invalidated in-place updates of the already-installed
+debug-signed `v0.2.0` — a one-time reinstall + model re-download, done
+now while distribution is still minimal. Before each release, verify the
+APK signer is `CN=KindNow` (not `CN=Android Debug`) via `apksigner
+verify --print-certs`.
+
+Delivered platform is **Android**; **iOS is TODO** (cross-platform
+validation only this cycle).
+
+Deferred (owner-noted 2026-05-19, fix later, tracked as tasks):
+(1) bottom action buttons (e.g. onboarding "Next") overlap the Android
+system nav bar — needs SafeArea/inset padding, verify on device;
+(2) inference runs on CPU and is slow — investigate GPU/Vulkan offload
+(llamadart 0.6.x is effectively CPU on Android; mobile GPU offload of a
+3.4 GB Q4 model is memory-bound and may not be viable — research, not a
+quick flag); (3) custom app icon (owner is preparing the asset; later
+separate commit — do NOT touch icons yet). Lead copy review still
+pending, now incl. the consent-screen strings (Hard Rule #6).

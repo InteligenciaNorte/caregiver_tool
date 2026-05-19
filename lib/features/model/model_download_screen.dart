@@ -92,6 +92,14 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                   onPressed: () => SystemNavigator.pop(),
                   child: const Text('Not now'),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  'Not now closes the app — KindNow needs the model to run.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
               ],
             ),
           )

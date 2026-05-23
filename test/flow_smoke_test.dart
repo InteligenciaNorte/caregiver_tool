@@ -119,11 +119,17 @@ void main() {
     await _settleSession(tester);
     expect(find.textContaining('people who can help right now'), findsNothing);
 
+    // The caregiver's own words are anchored on the session screen, so they
+    // don't "disappear" once the session starts (the move away from a chat
+    // layout — they stay visible alongside the reflection).
+    expect(find.text('I snapped at mom today.'), findsOneWidget);
+
     // Walk all four steps: Continue x3 (steps 0->1->2->3), then the last
     // step's button is Done and returns Home. The helpline card is absent
-    // on every step (NONE, not MEDIUM).
+    // on every step (NONE, not MEDIUM); the situation anchor stays put.
     for (var i = 0; i < kWitnessStepCount - 1; i++) {
       expect(find.byType(HelplineCard), findsNothing);
+      expect(find.text('I snapped at mom today.'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await _settleSession(tester);
     }
@@ -134,6 +140,9 @@ void main() {
       find.textContaining("Write what you're sitting with"),
       findsOneWidget,
     );
+    // The anchored situation is cleared with the session (architecture.md
+    // §Privacy) — it doesn't linger into the fresh Home.
+    expect(find.text('I snapped at mom today.'), findsNothing);
     // Fresh start after a session ends: the typed situation is gone
     // (architecture.md §Privacy), so Home's Continue is disabled again —
     // no re-running a session on the previous text.

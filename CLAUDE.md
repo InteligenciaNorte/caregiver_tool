@@ -278,9 +278,17 @@ validation only this cycle).
 Deferred (owner-noted 2026-05-19, fix later, tracked as tasks):
 (1) bottom action buttons (e.g. onboarding "Next") overlap the Android
 system nav bar — needs SafeArea/inset padding, verify on device;
-(2) inference runs on CPU and is slow — investigate GPU/Vulkan offload
-(llamadart 0.6.x is effectively CPU on Android; mobile GPU offload of a
-3.4 GB Q4 model is memory-bound and may not be viable — research, not a
-quick flag); (3) custom app icon (owner is preparing the asset; later
-separate commit — do NOT touch icons yet). Lead copy review still
-pending, now incl. the consent-screen strings (Hard Rule #6).
+(2) inference runs CPU-only and is slow — this is a forced choice, not a
+TODO. A GPU path exists (`llamadart` exposes llama.cpp's **Vulkan**
+backend via `n_gpu_layers`), but on mobile Adreno/Mali Vulkan is often
+*slower* than CPU (shared LPDDR, double-alloc, immature compute drivers —
+llama.cpp discussion #9464); the only Android GPU that reliably wins is
+Google's ML Drift, which lives in LiteRT-LM (can't target our fine-tune).
+GPU also ~doubles peak memory and overflows for **E4B** on 8 GB (E2B
+fits). The PLE quality cap (#22243) is backend-independent, so GPU
+wouldn't recover quality anyway. GPU stays a **backlog** option — only
+worth it alongside a LiteRT-LM migration, and even then E2B-only. Full
+reasoning + the issue-tracking table live in README §"Why this inference
+stack" — keep that section authoritative; (3) custom app icon — DONE
+(KindNow logo shipped in v0.3.0). Lead copy review still pending, now
+incl. the consent-screen strings (Hard Rule #6).

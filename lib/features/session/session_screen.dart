@@ -34,6 +34,12 @@ class SessionScreen extends ConsumerWidget {
       body: Column(
         children: [
           const CrisisHeader(),
+          // The caregiver's own words, pinned above the reflection for the
+          // whole session so they stay anchored and visible. The screen then
+          // reads as "your words + a reflection on them" rather than a chat
+          // where the typed message scrolled away.
+          if (session.situation.trim().isNotEmpty)
+            _SituationAnchor(session.situation),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -58,6 +64,45 @@ class SessionScreen extends ConsumerWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// The caregiver's situation, shown verbatim as a quiet blockquote (left
+/// accent bar, muted italic) at the top of every step. Anchors the user's
+/// own words so they don't "disappear" once the session starts, and breaks
+/// the chat metaphor: there's one fixed block of *your* words and one
+/// changing reflection, not an alternating conversation. Height-capped and
+/// scrollable so a long entry can't crowd out the reflection. Adds no copy
+/// (Hard Rule #6) — it only re-displays what the user already wrote.
+class _SituationAnchor extends StatelessWidget {
+  const _SituationAnchor(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+      padding: const EdgeInsets.only(left: 14),
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(color: theme.colorScheme.primary, width: 3),
+        ),
+      ),
+      constraints: const BoxConstraints(maxHeight: 132),
+      child: SingleChildScrollView(
+        child: Text(
+          text,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
+            fontStyle: FontStyle.italic,
+            height: 1.4,
+          ),
+        ),
       ),
     );
   }

@@ -38,7 +38,7 @@ is in [`docs/classifier_research.md`](docs/classifier_research.md).
 
 Flutter 3.24+ / Dart 3, `flutter_riverpod` (`StateNotifierProvider`,
 sealed states, no codegen), `go_router`, `llamadart` (llama.cpp) for
-on-device GGUF inference, `shared_preferences` (one boolean only). Android
+on-device GGUF inference, `shared_preferences` (one key only). Android
 is the primary target; iOS is cross-platform validation.
 
 ## Build & run
@@ -58,7 +58,7 @@ flutter build apk --release --dart-define=USE_REAL_MODEL=true \
 
 `USE_REAL_MODEL=true` switches the LLM provider to the real
 `llamadart`-backed client; unset (emulator, tests, CI) keeps the mock, so
-the whole app and its 42 tests run with no model.
+the whole app and its 43 tests run with no model.
 
 ## Model
 
@@ -153,7 +153,7 @@ relevant change, rebuild and re-benchmark before/after.
   S23 (real model): full onboarding → session → crisis flow, the
   user-initiated model download (resumable, SHA-256 verified), real
   reflections generated on-device, no OOM.
-- `flutter analyze` clean; 42 tests green.
+- `flutter analyze` clean; 43 tests green.
 - Release APKs are signed with a dedicated release keystore (kept
   outside the repo).
 

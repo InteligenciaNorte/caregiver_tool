@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
@@ -7,6 +8,7 @@ import 'core/data/prefs_provider.dart';
 import 'core/llm/gemma_client.dart';
 import 'core/llm/model_store.dart';
 import 'core/llm/real_gemma_client.dart';
+import 'features/onboarding/onboarding_state.dart';
 
 /// Dev switch: `--dart-define=USE_REAL_MODEL=true` runs the real on-device
 /// Gemma GGUF (a physical-device build) and gates startup on the
@@ -22,10 +24,16 @@ const bool _useRealModel = bool.fromEnvironment('USE_REAL_MODEL');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+  // App build identifier ("version+buildNumber"); onboarding re-shows when
+  // this changes (an update). Resolved eagerly so the router sees it
+  // synchronously, the same pattern as prefs above.
+  final info = await PackageInfo.fromPlatform();
+  final appBuild = '${info.version}+${info.buildNumber}';
   runApp(
     ProviderScope(
       overrides: [
         prefsProvider.overrideWithValue(prefs),
+        appBuildProvider.overrideWithValue(appBuild),
         if (_useRealModel) ...[
           realModelEnabledProvider.overrideWithValue(true),
           // The gate guarantees ModelReady before any session starts, so

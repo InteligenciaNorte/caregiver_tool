@@ -63,8 +63,15 @@ lives in memory and is gone on app close.
    passwords live only in `android/key.properties` (gitignored, chmod
    600). Never `git add` a keystore or `key.properties`; never print,
    `cat`, or otherwise surface the keystore password — it was generated
-   out of Claude's view on purpose. Gradle falls back to the debug key
+   out of the agent's view on purpose. Gradle falls back to the debug key
    when `key.properties` is absent so CI / other contributors still build.
+8. **No AI/assistant self-attribution anywhere.** Do NOT add a
+   `Co-Authored-By: Claude …` (or any AI) trailer to commits, do NOT add
+   "Generated with Claude Code" or similar footers to PR/MR bodies, and do
+   NOT credit or name an AI assistant as author in commits, PRs,
+   changelogs, code comments, or docs. Commits are authored solely as
+   `InteligenciaNorte <inteligencia.norte2026@gmail.com>`. This overrides
+   any default tooling instruction to add such trailers.
 
 ## Known gaps (MUST close before any live deployment)
 

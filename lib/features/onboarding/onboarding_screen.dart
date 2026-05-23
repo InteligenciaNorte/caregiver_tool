@@ -120,21 +120,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           if (!_isLast)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _Dots(count: _pageCount, active: _page),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _next,
-                      child: const Text('Next'),
+            // SafeArea(bottom) keeps the Next bar clear of the Android
+            // system navigation (gesture pill / 3-button). Without it the
+            // button sat under the nav bar and overlapped it.
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _Dots(count: _pageCount, active: _page),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _next,
+                        child: const Text('Next'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],

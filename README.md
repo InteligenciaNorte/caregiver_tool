@@ -111,9 +111,9 @@ residual signal is **not yet injected into the decoder layers** (issue
 `#22243`). The model therefore runs without part of its per-layer
 representational capacity: output is coherent but reasoning and
 instruction-following are visibly weaker than the same weights deserve. This
-is an upstream limitation, not a defect in the fine-tune. (Gemma **3n**'s PLE
-*is* implemented correctly in llama.cpp — a possible fallback if quality
-proves unacceptable, at the cost of Gemma 4's improvements.)
+is an upstream limitation, not a defect in the fine-tune. The fix is tracked
+upstream (`#22243`, below); until it lands, this is the ceiling on GGUF
+quality.
 
 **Inference is CPU-only, deliberately.** A GPU path *does* exist —
 `llamadart` (and the other Dart llama.cpp wrappers) expose llama.cpp's

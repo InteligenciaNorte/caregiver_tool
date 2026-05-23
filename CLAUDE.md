@@ -278,9 +278,15 @@ validation only this cycle).
 Deferred (owner-noted 2026-05-19, fix later, tracked as tasks):
 (1) bottom action buttons (e.g. onboarding "Next") overlap the Android
 system nav bar — needs SafeArea/inset padding, verify on device;
-(2) inference runs on CPU and is slow — investigate GPU/Vulkan offload
-(llamadart 0.6.x is effectively CPU on Android; mobile GPU offload of a
-3.4 GB Q4 model is memory-bound and may not be viable — research, not a
-quick flag); (3) custom app icon (owner is preparing the asset; later
-separate commit — do NOT touch icons yet). Lead copy review still
-pending, now incl. the consent-screen strings (Hard Rule #6).
+(2) inference runs CPU-only and is slow — this is a forced choice, not a
+TODO: `llamadart` 0.6.x has no working Android GPU path, and the Android
+GPU delegate (where one exists, e.g. base Gemma 4 in LiteRT-LM) ~doubles
+peak memory at graph-compile and overflows for **E4B** on 8 GB (E2B
+fits). GPU stays a **backlog** option for E2B / a smaller variant or a
+no-double-alloc path — not abandoned. Output quality is also capped by an
+upstream PLE bug (llama.cpp #22243); GGUF is the only path because a
+fine-tuned Gemma 4 can't be converted to `.litertlm` today. Full
+reasoning + the issue-tracking table live in README §"Why this inference
+stack" — keep that section authoritative; (3) custom app icon — DONE
+(KindNow logo shipped in v0.3.0). Lead copy review still pending, now
+incl. the consent-screen strings (Hard Rule #6).

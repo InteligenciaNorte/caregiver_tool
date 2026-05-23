@@ -115,22 +115,36 @@ is an upstream limitation, not a defect in the fine-tune. (Gemma **3n**'s PLE
 *is* implemented correctly in llama.cpp — a possible fallback if quality
 proves unacceptable, at the cost of Gemma 4's improvements.)
 
-**Inference is CPU-only, deliberately.** Two independent reasons:
+**Inference is CPU-only, deliberately.** A GPU path *does* exist —
+`llamadart` (and the other Dart llama.cpp wrappers) expose llama.cpp's
+**Vulkan** backend (`GGML_VULKAN`), toggled via `n_gpu_layers` (0 = CPU,
+99/-1 = all layers on GPU). We don't use it, for two reasons:
 
-1. `llamadart` 0.6.x has no working Android GPU path for this model, so
-   today there is no GPU lever to pull regardless.
-2. Even where a GPU delegate exists (e.g. base Gemma 4 in LiteRT-LM /
-   Edge Gallery), the Android GPU path repacks weights into pinned
-   OpenCL/ION buffers and never frees the source `mmap`, roughly **doubling
-   peak memory** at graph-compile time. On an 8 GB device that overflows for
-   **E4B** (~6.5–7 GB peak → killed by `lmkd`); **E2B fits**, and E4B runs
-   fine on CPU. PLE itself stays CPU-resident (`mmap`) and is not the part
-   that overflows.
+1. **On mobile, Vulkan is often *slower* than CPU.** Adreno/Mali have no
+   dedicated VRAM — it's the same shared LPDDR — so weights are still copied
+   into Vulkan buffers (double-allocation), memory bandwidth is split between
+   CPU and GPU, and the mobile Vulkan-compute drivers aren't tuned for LLM
+   inference. This is a long-standing llama.cpp issue
+   ([discussion #9464](https://github.com/ggml-org/llama.cpp/discussions/9464));
+   on many Android devices GGUF on CPU (XNNPACK/NEON) beats the same GGUF on
+   Vulkan. The only Android GPU path that reliably *wins* is Google's
+   OpenCL/ML Drift — and that lives in **LiteRT-LM**, which we can't target
+   with a fine-tuned model (see above). Vulkan in llama.cpp is not that.
+2. **Memory: double-allocation overflows for the bigger model.** The GPU load
+   roughly **doubles peak memory**; on an 8 GB device that's fatal for **E4B**
+   (~6.5–7 GB peak → killed by `lmkd`, observed with base Gemma 4 in Edge
+   Gallery), while **E2B fits**. (PLE itself stays CPU-resident `mmap` and is
+   not the part that overflows.)
+
+Note: the **PLE quality cap (#22243) is backend-independent** — it lives in
+llama.cpp's compute graph, so moving to GPU would *not* recover the lost
+quality, only (maybe) change speed.
 
 CPU-only shares the model's `mmap` pages, stays well within memory, and is
 stable under pressure — at ~10–14 tok/s for E2B on a Snapdragon 8 Gen 2.
-GPU is **not abandoned**: it's a backlog option for E2B / a smaller variant,
-or for if/when a no-double-allocation path appears (see issues below).
+GPU is **not abandoned**, but it's only worth revisiting together with a
+LiteRT-LM migration (ML Drift, not Vulkan) — and even then only for **E2B**,
+keeping E4B on CPU. Tracked as a backlog item.
 
 ### Upstream issues we track
 

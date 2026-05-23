@@ -1,7 +1,7 @@
 name: caregiver_tool
 description: Offline decompression tool for family caregivers of people with dementia.
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.4.0+4
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -19,6 +19,7 @@ dependencies:
   # (no http/dio package — CLAUDE.md Hard Rule #2). Owner-approved deps:
   path_provider: ^2.1.4 # writable app dir for the downloaded GGUF
   crypto: ^3.0.3 # streaming SHA-256 verify of the downloaded model
+  package_info_plus: ^8.0.0 # read app version → re-show onboarding after an update
 
 dev_dependencies:
   flutter_test:

@@ -36,22 +36,25 @@ class ModelDownloadScreen extends ConsumerStatefulWidget {
 }
 
 class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
-  /// Dev builds keep the old fast path: a side-loaded model means there is
-  /// nothing to download and no reason to ask. Empty in production →
-  /// the consent gate applies.
-  static const _devModelPath = String.fromEnvironment('DEV_MODEL_PATH');
+  /// True while the one network-free presence check runs. Until it resolves
+  /// we show a neutral spinner, not the consent prompt — so an already-
+  /// downloaded model (or a dev side-load) goes straight through without
+  /// asking, and offline launches still work.
+  bool _checking = true;
 
-  /// False until the person opts in (or a dev model path bypasses it).
-  /// Gates the status-driven UI so no fetch happens before consent.
+  /// False until the person opts in. Gates the download UI so no network
+  /// fetch happens before consent (only reached when the model is absent).
   bool _started = false;
 
   @override
   void initState() {
     super.initState();
-    if (_devModelPath.isNotEmpty) {
-      _started = true;
-      Future.microtask(() => ref.read(modelStoreProvider.notifier).ensure());
-    }
+    // Already on disk? hasLocalModel flips to ModelReady → the listener
+    // below navigates on. Absent → drop the spinner and show consent.
+    Future.microtask(() async {
+      await ref.read(modelStoreProvider.notifier).hasLocalModel();
+      if (mounted) setState(() => _checking = false);
+    });
   }
 
   void _startDownload() {
@@ -71,7 +74,13 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       if (next is ModelReady && context.mounted) context.go('/onboarding');
     });
 
-    final (String title, String blurb, Widget body) = !_started
+    final (String title, String blurb, Widget body) = _checking
+        ? (
+            'Getting things ready',
+            '',
+            const CircularProgressIndicator(),
+          )
+        : !_started
         ? (
             'One-time setup',
             'KindNow runs a private AI model entirely on your phone — '
@@ -177,14 +186,16 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineSmall,
               ),
-              const SizedBox(height: 12),
-              Text(
-                blurb,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              if (blurb.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  blurb,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 40),
               body,
             ],

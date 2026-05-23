@@ -60,6 +60,40 @@ class ModelStore extends StateNotifier<ModelStatus> {
 
   bool _running = false;
 
+  /// Network-free check for an already-acquired model. Returns true (and
+  /// flips to [ModelReady]) when a verified model is on disk, so the app can
+  /// run **offline** after the one-time download and the consent screen can
+  /// skip straight through instead of asking on every launch.
+  ///
+  /// Trusts the `.sha256` marker, which is written only after a passing
+  /// verification ([ensure]) — so a `*.gguf` next to its marker is known-good
+  /// without re-hashing 3.4 GB or fetching the manifest. A bare `.part` (no
+  /// marker) is an interrupted download and does not count.
+  Future<bool> hasLocalModel() async {
+    if (state is ModelReady) return true;
+    if (_devModelPath.isNotEmpty && File(_devModelPath).existsSync()) {
+      state = const ModelReady(_devModelPath);
+      return true;
+    }
+    try {
+      final dir = Directory(
+        '${(await getApplicationSupportDirectory()).path}/models',
+      );
+      if (!dir.existsSync()) return false;
+      for (final entry in dir.listSync()) {
+        if (entry is! File || !entry.path.endsWith('.gguf')) continue;
+        final marker = File('${entry.path}.sha256');
+        if (marker.existsSync() && await entry.length() > 0) {
+          state = ModelReady(entry.path);
+          return true;
+        }
+      }
+    } catch (_) {
+      // Treat any IO hiccup as "not present" → fall through to consent.
+    }
+    return false;
+  }
+
   /// Idempotent. Resolves the model: dev shortcut → already-present &
   /// verified → otherwise download + verify. Never throws; failures land
   /// in [ModelError] so the UI can offer retry (the partial file is kept

@@ -20,7 +20,8 @@ One module only: **Witnessing Hard Moments with Compassion** (4 steps,
 no module-selection UI. The module is the app.
 
 No persistence between sessions. Nothing in SQLite. Nothing in
-SharedPreferences except a single `onboarding_seen` boolean. Session state
+SharedPreferences except a single onboarding-completion marker
+(`onboarded_build`, a version string — see Hard Rule #3). Session state
 lives in memory and is gone on app close.
 
 ## Hard Rules (NEVER violate)
@@ -39,7 +40,11 @@ lives in memory and is gone on app close.
    No telemetry/analytics ever.
 3. **NO persistence of user data.** No sqflite. No SharedPreferences for
    typed input or session content. The only allowed SharedPreferences key is
-   `onboarding_seen` (boolean).
+   the onboarding-completion marker `onboarded_build` — a string holding the
+   app build (`version+buildNumber`) the user last finished onboarding on, so
+   onboarding re-shows after an app update (owner-approved 2026-05-23, via
+   `package_info_plus`). It records no user data. (Superseded the earlier
+   `onboarding_seen` boolean.)
 4. **NO login, account, email field, or share buttons.**
 5. **Crisis classifier is now AUTHORED (safety-critical).**
    `lib/core/crisis/classifier.dart` is implemented against the locked
@@ -108,7 +113,8 @@ lives in memory and is gone on app close.
 - Routing: `go_router` with string paths
 - JSON: `dart:convert` with manual `fromJson` (NOT json_serializable). Only
   the system prompt asset is loaded at startup; no JSON elsewhere.
-- Settings: `shared_preferences` (one boolean only, see Hard Rule #3)
+- Settings: `shared_preferences` (one key only — the `onboarded_build`
+  version string, see Hard Rule #3)
 - LLM runtime: `llamadart` plugin wrapping llama.cpp
 - Model artifact: `gemma4-e2b_r32-q4_k_m.gguf` (~3.4 GB, Q4_K_M),
   produced by ML engineer via Unsloth → GGUF export. **NOT bundled** (too
